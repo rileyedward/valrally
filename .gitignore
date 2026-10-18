@@ -384,3 +384,7 @@ publicized_assemblies/
 decomp/
 decompiled/
 **/decomp/
+# Release output from tools/release/build-release.ps1
+dist/
+# Research notes and anything from Art of Rally stay outside the repo
+bifrost-research/

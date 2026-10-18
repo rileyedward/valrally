@@ -11,7 +11,7 @@ namespace BifrostRally.Valheim
     {
         public const string PluginGUID = "com.riley.bifrostrally";
         public const string PluginName = "Bifrost Rally";
-        public const string PluginVersion = "0.0.1";
+        public const string PluginVersion = "0.1.0";
 
         private CarConfig _carConfig;
 
