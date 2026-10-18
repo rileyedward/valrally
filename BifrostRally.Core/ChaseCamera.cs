@@ -4,20 +4,53 @@ namespace BifrostRally.Core
 {
     public class ChaseCameraSettings
     {
-        public float Distance = 30f;
-        public float Height = 17f;
-        public float AimHeight = 0.5f;
-        public float Fov = 40f;
-        public float FastFovScale = 1.1f;
+        // Measured from the aim point, which sits AimAhead in front of the car.
+        public float Distance = 7.5f;
+        public float Height = 2.6f;
+        public float AimHeight = 1f;
+        public float AimAhead = 1.5f;
+        public float Fov = 60f;
+        public float FastFovScale = 1.12f;
         public float FastSpeedStart = 20f;
         public float FastSpeedEnd = 35f;
-        public float FastAimRaise = 2f;
-        public float YawFollowRate = 1.5f;
-        public float HeightFollowRate = 2f;
+        public float FastAimRaise = 0.3f;
+        public float YawFollowRate = 3.5f;
+        public float HeightFollowRate = 4f;
         public float SpinHoldStart = 2.8f;
         public float SpinHoldEnd = 3.5f;
         public float SpeedSmoothTime = 0.75f;
-        public float MinDistanceScale = 0.45f;
+        public float MinDistanceScale = 0.3f;
+
+        private static readonly System.Reflection.FieldInfo[] Fields = typeof(ChaseCameraSettings).GetFields();
+
+        /// <summary>Blend every setting between two presets, for a smooth switch.</summary>
+        public static ChaseCameraSettings Lerp(ChaseCameraSettings a, ChaseCameraSettings b, float t)
+        {
+            var result = new ChaseCameraSettings();
+            foreach (System.Reflection.FieldInfo field in Fields)
+            {
+                field.SetValue(result, Mathf.Lerp((float)field.GetValue(a), (float)field.GetValue(b), t));
+            }
+            return result;
+        }
+
+        /// <summary>Close, low chase like a traditional racing game. The default.</summary>
+        public static ChaseCameraSettings Close() => new ChaseCameraSettings();
+
+        /// <summary>High, far, tilted view in the spirit of AoR's default camera.</summary>
+        public static ChaseCameraSettings High() => new ChaseCameraSettings
+        {
+            Distance = 30f,
+            Height = 17f,
+            AimHeight = 0.5f,
+            AimAhead = 0f,
+            Fov = 40f,
+            FastFovScale = 1.1f,
+            FastAimRaise = 2f,
+            YawFollowRate = 1.5f,
+            HeightFollowRate = 2f,
+            MinDistanceScale = 0.45f,
+        };
     }
 
     public struct CameraPose
@@ -80,8 +113,9 @@ namespace BifrostRally.Core
             float fastTarget = Mathf.InverseLerp(s.FastSpeedStart, s.FastSpeedEnd, speed);
             _fastT = Mathf.SmoothDamp(_fastT, fastTarget, ref _fastVelocity, s.SpeedSmoothTime, Mathf.Infinity, dt);
 
-            Vector3 aim = carPosition + Vector3.up * (s.AimHeight + s.FastAimRaise * _fastT);
-            Vector3 back = Quaternion.Euler(0f, _yaw, 0f) * Vector3.back;
+            Quaternion heading = Quaternion.Euler(0f, _yaw, 0f);
+            Vector3 aim = carPosition + Vector3.up * (s.AimHeight + s.FastAimRaise * _fastT) + heading * Vector3.forward * s.AimAhead;
+            Vector3 back = heading * Vector3.back;
             Vector3 offset = back * s.Distance + Vector3.up * (_height - carPosition.y + s.Height);
 
             float length = offset.magnitude;
