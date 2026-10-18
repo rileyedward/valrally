@@ -77,21 +77,11 @@ namespace BifrostRally.Core
             float lateralSpeed = Vector3.Dot(velocity, t.right);
             bool allGrounded = groundedWheels == wheelCount;
 
-            if (allGrounded && Mathf.Abs(forwardSpeed) * 3.6f > f.AssistMinSpeedKmh)
+            // Slide help stays off while the handbrake is held, so a handbrake flick can rotate fully.
+            float yaw = SteerYaw(f, input.Steer, forwardSpeed, allGrounded) + SlideYaw(f, forwardSpeed, lateralSpeed, groundedWheels > 0 && !input.Handbrake);
+            if (yaw != 0f)
             {
-                // Steering yaw, from the raw input so it reacts before the wheels do.
-                float speedScale = Mathf.Clamp01(Mathf.Abs(forwardSpeed) / f.SteerYawFullSpeed);
-                float yaw = Mathf.Clamp(input.Steer * f.SteerYawTorque * speedScale, -f.SteerYawMaxTorque, f.SteerYawMaxTorque);
-                body.AddTorque(t.up * yaw * Mathf.Sign(forwardSpeed));
-            }
-
-            if (forwardSpeed > f.SlideMinSpeed && groundedWheels > 0)
-            {
-                // Positive slip means travelling to the right of the nose; positive yaw turns
-                // the nose right, so this lines the car up with where it is going.
-                float slipDeg = Mathf.Atan2(lateralSpeed, forwardSpeed) * Mathf.Rad2Deg;
-                float amount = Mathf.Clamp01(Mathf.Abs(slipDeg) / f.SlideFullAngleDeg);
-                body.AddTorque(t.up * Mathf.Sign(slipDeg) * amount * f.SlideStabilityTorque);
+                body.AddTorque(t.up * yaw);
             }
 
             Vector3 flat = new Vector3(velocity.x, 0f, velocity.z);
@@ -101,6 +91,33 @@ namespace BifrostRally.Core
             }
 
             UpdateAirAndLanding(body, t, groundedWheels, wheelCount, dt);
+        }
+
+        /// <summary>Yaw torque from the raw steering input, so the car reacts before the wheels do.</summary>
+        public static float SteerYaw(FeelSettings f, float steer, float forwardSpeed, bool allGrounded)
+        {
+            if (!f.Enabled || !allGrounded || Mathf.Abs(forwardSpeed) * 3.6f <= f.AssistMinSpeedKmh)
+            {
+                return 0f;
+            }
+            float speedScale = Mathf.Clamp01(Mathf.Abs(forwardSpeed) / f.SteerYawFullSpeed);
+            float yaw = Mathf.Clamp(steer * f.SteerYawTorque * speedScale, -f.SteerYawMaxTorque, f.SteerYawMaxTorque);
+            return yaw * Mathf.Sign(forwardSpeed);
+        }
+
+        /// <summary>
+        /// Positive slip means travelling to the right of the nose; positive yaw turns the nose
+        /// right, so this lines the car up with where it is going.
+        /// </summary>
+        public static float SlideYaw(FeelSettings f, float forwardSpeed, float lateralSpeed, bool grounded)
+        {
+            if (!f.Enabled || !grounded || forwardSpeed <= f.SlideMinSpeed)
+            {
+                return 0f;
+            }
+            float slipDeg = Mathf.Atan2(lateralSpeed, forwardSpeed) * Mathf.Rad2Deg;
+            float amount = Mathf.Clamp01(Mathf.Abs(slipDeg) / f.SlideFullAngleDeg);
+            return Mathf.Sign(slipDeg) * amount * f.SlideStabilityTorque;
         }
 
         private void UpdateAirAndLanding(Rigidbody body, Transform t, int groundedWheels, int wheelCount, float dt)
