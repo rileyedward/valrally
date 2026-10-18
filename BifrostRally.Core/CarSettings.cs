@@ -8,7 +8,9 @@ namespace BifrostRally.Core
     {
         // Body
         public float Mass = 1200f;
-        public float CenterOfMassHeight = -0.25f;
+        // Body-centre relative. The feel layer lowers it further; about 0.2 m above the wheel
+        // centres gives real weight transfer, since tyre forces act at the wheel centres.
+        public float CenterOfMassHeight = 0f;
         public float AeroDrag = 0.45f;
 
         // Layout (local to the body centre)
@@ -75,6 +77,12 @@ namespace BifrostRally.Core
         // 0 = open, 1 = all driven wheels locked together.
         public float DiffLock = 0.3f;
 
+        // Traction control: trims engine torque when the driven wheels spin past the target slip.
+        public bool TractionControl = true;
+        public float TractionSlipTarget = 0.2f;
+        public float TractionStrength = 0.8f;
+        public float TractionRecoverRate = 4f;
+
         // Simple tyres (the M1 model)
         public float PeakSlipAngleDeg = 8f;
         public float GripFalloff = 0.15f;
@@ -89,7 +97,7 @@ namespace BifrostRally.Core
         public float BrakeForce = 12000f;
         public float BrakeBiasFront = 0.6f;
         public float HandbrakeForce = 12000f;
-        public float HandbrakeGripFactor = 0.7f;
+        public float HandbrakeGripFactor = 0.55f;
 
         // Steering
         public float MaxSteerDeg = 32f;

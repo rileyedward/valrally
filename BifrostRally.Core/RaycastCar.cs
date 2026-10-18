@@ -34,6 +34,7 @@ namespace BifrostRally.Core
 
         public CarFeel Feel = new CarFeel();
         public Drivetrain Drivetrain = new Drivetrain();
+        public TractionControl Traction = new TractionControl();
 
         public float SpeedKmh { get; private set; }
         public float MaxSlipAngleDeg { get; private set; }
@@ -99,8 +100,7 @@ namespace BifrostRally.Core
             SpeedKmh = forwardSpeed * 3.6f;
 
             _steer = Mathf.MoveTowards(_steer, Mathf.Clamp(Input.Steer, -1f, 1f), s.SteerRate * dt);
-            float speedT = Mathf.Clamp01(Mathf.Abs(SpeedKmh) / s.SteerSpeedKmh);
-            float steerDeg = _steer * s.MaxSteerDeg * Mathf.Lerp(1f, s.SteerAtSpeedFactor, speedT);
+            float steerDeg = SteerAngle(s, _steer, SpeedKmh);
 
             // Suspension: compression and spring/damper force per wheel.
             float maxDist = s.RestLength + s.WheelRadius;
@@ -136,6 +136,15 @@ namespace BifrostRally.Core
             {
                 float throttle = Mathf.Clamp01(reversing ? Input.Brake : Input.Throttle);
                 driveTorque = Drivetrain.Step(s, throttle, reversing, DrivenOmega(s), forwardSpeed, dt);
+                // Only trim drive torque, never engine braking.
+                if (driveTorque * Mathf.Sign(forwardSpeed + 0.01f) > 0f)
+                {
+                    driveTorque *= Traction.Step(s, DrivenSlipRatio(s), dt);
+                }
+                else
+                {
+                    Traction.Reset();
+                }
             }
 
             float massPerWheel = s.Mass * 0.25f;
@@ -226,6 +235,27 @@ namespace BifrostRally.Core
         private float AxleShare(CarSettings s, bool front)
         {
             return 0.5f * (front ? 1f - s.RearTorqueShare : s.RearTorqueShare);
+        }
+
+        /// <summary>Front wheel angle in degrees; the lock shrinks with speed.</summary>
+        public static float SteerAngle(CarSettings s, float steer, float speedKmh)
+        {
+            float speedT = Mathf.Clamp01(Mathf.Abs(speedKmh) / s.SteerSpeedKmh);
+            return steer * s.MaxSteerDeg * Mathf.Lerp(1f, s.SteerAtSpeedFactor, speedT);
+        }
+
+        /// <summary>Largest slip ratio among grounded driven wheels, from the last step.</summary>
+        private float DrivenSlipRatio(CarSettings s)
+        {
+            float max = 0f;
+            foreach (Wheel w in _wheels)
+            {
+                if (w.Grounded && AxleShare(s, w.Front) > 0f)
+                {
+                    max = Mathf.Max(max, Mathf.Abs(w.State.SlipRatio));
+                }
+            }
+            return max;
         }
 
         private float DrivenOmega(CarSettings s)
