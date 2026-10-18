@@ -73,7 +73,7 @@ namespace BifrostRally.Valheim
                 IsDriving = false;
             }
 
-            bool typing = global::Console.IsVisible() || (Chat.instance != null && Chat.instance.HasFocus()) || Menu.IsVisible();
+            bool typing = IsTyping();
             if (!typing && ZInput.GetKeyDown(driveKey))
             {
                 if (IsDriving)
@@ -89,6 +89,12 @@ namespace BifrostRally.Valheim
             }
 
             Car.Input = IsDriving && !typing ? ReadInput() : new CarInput { Brake = 0f, Handbrake = !IsDriving };
+        }
+
+        /// <summary>True while the console, chat or menu has the keyboard.</summary>
+        public static bool IsTyping()
+        {
+            return global::Console.IsVisible() || (Chat.instance != null && Chat.instance.HasFocus()) || Menu.IsVisible();
         }
 
         private static CarInput ReadInput()

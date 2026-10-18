@@ -24,9 +24,34 @@ namespace BifrostRally.Valheim
         private static bool _warnedNoProfile;
         private static float _weight;
 
+        private const float PresetSwitchTime = 0.6f;
+
+        private static ChaseCameraSettings _switchFrom;
+        private static ChaseCameraSettings _switchTo;
+        private static float _switchT = 1f;
+
+        // Terrain and buildings only: trees and bushes would make a close camera jump around.
+        private static int BlockMask => LayerMask.GetMask("terrain", "piece");
+
+        /// <summary>Change the camera preset; blends over a moment when already driving.</summary>
+        public static void SetCamera(ChaseCameraSettings camera, bool smooth)
+        {
+            if (smooth && _weight > 0f)
+            {
+                _switchFrom = Chase.Settings;
+                _switchTo = camera;
+                _switchT = 0f;
+            }
+            else
+            {
+                Chase.Settings = camera;
+                _switchT = 1f;
+            }
+        }
+
         public static void Configure(ChaseCameraSettings camera, ColorFilterSettings filter)
         {
-            Chase.Settings = camera;
+            SetCamera(camera, smooth: false);
             _filterSettings = filter;
             if (_lut != null)
             {
@@ -56,7 +81,13 @@ namespace BifrostRally.Valheim
                 return;
             }
 
-            LayerMask blockMask = gameCamera.m_blockCameraMask;
+            if (_switchT < 1f)
+            {
+                _switchT = Mathf.Min(1f, _switchT + dt / PresetSwitchTime);
+                Chase.Settings = ChaseCameraSettings.Lerp(_switchFrom, _switchTo, Mathf.SmoothStep(0f, 1f, _switchT));
+            }
+
+            int blockMask = BlockMask;
             CameraPose chase = Chase.Update(car.transform.position, car.transform.forward, car.Velocity, car.YawRate, dt,
                 (origin, dir, length) => Physics.SphereCast(origin, CameraRadius, dir, out RaycastHit hit, length, blockMask)
                     ? hit.distance

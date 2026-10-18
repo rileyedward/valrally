@@ -19,7 +19,7 @@ namespace BifrostRally.Valheim
         {
             Jotunn.Logger.LogInfo($"{PluginName} {PluginVersion} loaded. Unity {Application.unityVersion}");
             _carConfig = new CarConfig(Config);
-            RallyView.Configure(_carConfig.Get<Core.ChaseCameraSettings>(), _carConfig.Get<Core.ColorFilterSettings>());
+            RallyView.Configure(_carConfig.GetCamera(_carConfig.Preset.Value), _carConfig.Get<Core.ColorFilterSettings>(CarConfig.FilterSection));
             CommandManager.Instance.AddConsoleCommand(new SpawnCarCommand(_carConfig));
             CommandManager.Instance.AddConsoleCommand(new RemoveCarCommand());
             new Harmony(PluginGUID).PatchAll();
@@ -29,6 +29,15 @@ namespace BifrostRally.Valheim
         {
             RallyView.BlendTime = _carConfig.BlendTime.Value;
             RallyDriver.Update(_carConfig.DriveKey.Value);
+
+            if (RallyDriver.IsDriving && !RallyDriver.IsTyping() && ZInput.GetKeyDown(_carConfig.CameraKey.Value))
+            {
+                // Saved straight away, so the next drive starts on the same preset.
+                CameraPreset next = _carConfig.Preset.Value == CameraPreset.Close ? CameraPreset.High : CameraPreset.Close;
+                _carConfig.Preset.Value = next;
+                RallyView.SetCamera(_carConfig.GetCamera(next), smooth: true);
+                Jotunn.Logger.LogInfo($"Camera preset: {next}");
+            }
         }
     }
 
