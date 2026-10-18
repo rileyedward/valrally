@@ -53,20 +53,7 @@ if [ "$target" = "Debug" ]; then
     cp "$targetPath/$targetAssembly" "$plug"
     # copy if it exists
     [ -e "$targetPath/$name.pdb" ] && cp "$targetPath/$name.pdb" "$plug"
+    [ -e "$targetPath/BifrostRally.Core.dll" ] && cp "$targetPath/BifrostRally.Core.dll" "$plug"
 fi
 
-if [ "$target" = "Release" ]; then
-    packagePath="$projectPath/Package"
-    mkdir -p "$packagePath/plugins"
-    cp "$targetPath/$targetAssembly" "$packagePath/plugins/"
-    cp "$projectPath/README.md" "$packagePath/"
-
-    if command -v zip > /dev/null; then
-        [ -e "$name.zip" ] && rm "$name.zip"
-        cd "$packagePath"
-        zip -r "../$name.zip" . > /dev/null
-        echo "Build successful, your zip is ready for upload at $(realpath ../$name.zip)."
-    else
-        echo "Skipping plugin zipping, zip command isn't available."
-    fi
-fi
+# Release packages are built by tools/release/build-release.ps1

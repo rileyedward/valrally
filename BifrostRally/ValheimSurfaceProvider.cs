@@ -29,7 +29,7 @@ namespace BifrostRally.Valheim
     /// <summary>
     /// Answers "what is this wheel on" from Valheim's ground data: hoe paint first (paved,
     /// dirt, cultivated), then biome and slope, then a sea-level guess for sand. Buildings use
-    /// their piece material. See bifrost-research findings/valheim/v1-terrain.md.
+    /// their piece material.
     /// </summary>
     internal class ValheimSurfaceProvider : ISurfaceProvider
     {
