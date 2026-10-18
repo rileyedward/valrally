@@ -373,7 +373,7 @@ Environment.props
 
 # not the generated dll for thunderstore
 */Package/plugins/*
-# --- Bifrost Rally ---
+# --- ValRally ---
 # Never commit game or third-party binaries (Valheim, Art of Rally, BepInEx, Jotunn)
 *.dll
 *.mdb
@@ -386,5 +386,7 @@ decompiled/
 **/decomp/
 # Release output from tools/release/build-release.ps1
 dist/
+# [Rr]elease/ above would otherwise hide the release script itself
+!tools/release/
 # Research notes and anything from Art of Rally stay outside the repo
-bifrost-research/
+research/
