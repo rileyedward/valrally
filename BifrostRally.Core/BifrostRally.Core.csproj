@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Rally core: car physics with no Valheim, BepInEx or Jotunn dependencies. Only UnityEngine modules. -->
+  <Import Project="$(MSBuildThisFileDirectory)..\Environment.props" Condition="Exists('$(MSBuildThisFileDirectory)..\Environment.props')" />
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>BifrostRally.Core</RootNamespace>
+    <AssemblyName>BifrostRally.Core</AssemblyName>
+    <LangVersion>10</LangVersion>
+    <Deterministic>true</Deterministic>
+    <DebugType>full</DebugType>
+    <UNITY_MANAGED>$(VALHEIM_INSTALL)\valheim_Data\Managed</UNITY_MANAGED>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine">
+      <HintPath>$(UNITY_MANAGED)\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(UNITY_MANAGED)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(UNITY_MANAGED)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
