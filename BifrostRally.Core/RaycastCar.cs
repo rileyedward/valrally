@@ -5,7 +5,7 @@ namespace BifrostRally.Core
     /// <summary>
     /// Minimal raycast car. Each wheel casts one ray down, pushes the body with a linear
     /// spring and damper, and adds tyre forces at the wheel centre. Weight transfer comes
-    /// out of the physics; there is no extra helper layer yet.
+    /// out of the physics. CarFeel adds the arcade helpers on top.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     public class RaycastCar : MonoBehaviour
@@ -22,7 +22,7 @@ namespace BifrostRally.Core
             public bool Grounded;
             public RaycastHit Hit;
             public float SpinDeg;
-            public float LateralSlip;
+            public WheelState State;
         }
 
         public CarSettings Settings = new CarSettings();
@@ -32,7 +32,12 @@ namespace BifrostRally.Core
         /// <summary>Where a driver sits. May be null.</summary>
         public Transform Seat;
 
+        public CarFeel Feel = new CarFeel();
+        public Drivetrain Drivetrain = new Drivetrain();
+
         public float SpeedKmh { get; private set; }
+        public float MaxSlipAngleDeg { get; private set; }
+        public float MaxSlipRatio { get; private set; }
         public int GroundedWheels { get; private set; }
         public Vector3 Velocity => _body != null ? _body.GetPointVelocity(_body.worldCenterOfMass) : Vector3.zero;
 
@@ -47,13 +52,14 @@ namespace BifrostRally.Core
         /// Wheel order is front-left, front-right, rear-left, rear-right.
         /// Visuals are optional; pivots steer and tyres spin.
         /// </summary>
-        public void Init(CarSettings settings, int groundMask, Transform[] pivots, Transform[] tyres)
+        public void Init(CarSettings settings, FeelSettings feel, int groundMask, Transform[] pivots, Transform[] tyres)
         {
             Settings = settings;
+            Feel.Settings = feel ?? new FeelSettings();
             GroundMask = groundMask;
             _body = GetComponent<Rigidbody>();
             _body.mass = settings.Mass;
-            _body.centerOfMass = new Vector3(0f, settings.CenterOfMassHeight, 0f);
+            Feel.ApplyMassProperties(_body, settings.CenterOfMassHeight);
 
             float x = settings.TrackWidth * 0.5f;
             float z = settings.Wheelbase * 0.5f;
@@ -115,17 +121,24 @@ namespace BifrostRally.Core
             ApplyAntiRoll(_wheels[0], _wheels[1], s.AntiRollRate);
             ApplyAntiRoll(_wheels[2], _wheels[3], s.AntiRollRate);
 
-            // Tyres: lateral grip, drive, brakes, handbrake.
-            float massPerWheel = s.Mass * 0.25f;
-            foreach (Wheel w in _wheels)
+            // Drive torque for this step, from the gearbox and the driven wheels' spin.
+            bool reversing = Input.Brake > 0f && Input.Throttle <= 0f && forwardSpeed < 1f;
+            bool spinModel = s.PacejkaTyres && s.WheelSpin;
+            float driveTorque = 0f;
+            if (spinModel)
             {
-                if (!w.Grounded)
-                {
-                    continue;
-                }
+                float throttle = Mathf.Clamp01(reversing ? Input.Brake : Input.Throttle);
+                driveTorque = Drivetrain.Step(s, throttle, reversing, DrivenOmega(s), forwardSpeed, dt);
+            }
 
-                float load = Mathf.Max(0f, w.SuspensionForce);
-                Vector3 normal = w.Hit.normal;
+            float massPerWheel = s.Mass * 0.25f;
+            MaxSlipAngleDeg = 0f;
+            MaxSlipRatio = 0f;
+            for (int i = 0; i < _wheels.Length; i++)
+            {
+                Wheel w = _wheels[i];
+                float load = w.Grounded ? Mathf.Max(0f, w.SuspensionForce) : 0f;
+                Vector3 normal = w.Grounded ? w.Hit.normal : up;
                 Vector3 centre = transform.TransformPoint(w.Mount) - up * (s.RestLength - w.Compression);
 
                 float wheelSteer = w.Front ? steerDeg : 0f;
@@ -133,85 +146,188 @@ namespace BifrostRally.Core
                 Vector3 fwd = Vector3.ProjectOnPlane(heading, normal).normalized;
                 Vector3 right = Vector3.Cross(normal, fwd);
 
-                Vector3 v = _body.GetPointVelocity(w.Hit.point);
+                Vector3 v = _body.GetPointVelocity(w.Grounded ? w.Hit.point : centre);
                 float vLong = Vector3.Dot(v, fwd);
                 float vLat = Vector3.Dot(v, right);
-
                 bool handbraking = Input.Handbrake && !w.Front;
-                float handbrakeGrip = handbraking ? s.HandbrakeGripFactor : 1f;
-                float fy;
-                float fxLimit;
-                if (s.PacejkaTyres)
+
+                Vector2 force;
+                if (spinModel)
                 {
-                    float loadFactor = Tyre.LoadFactor(load, s.ReferenceLoad, s.LoadSensitivity);
-                    float lateralPeak = (w.Front ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * loadFactor * load;
-                    w.LateralSlip = Tyre.RelaxLateral(w.LateralSlip, vLat, vLong, SpeedKmh, s, dt);
-                    float slipDeg = Mathf.Atan(w.LateralSlip) * Mathf.Rad2Deg;
-                    fy = -lateralPeak * handbrakeGrip * Tyre.MagicFormula(slipDeg, s.PacejkaPeakSlipDeg, s.PacejkaShape, s.PacejkaCurvature);
-                    fxLimit = s.LongitudinalPeak * s.Grip * loadFactor * load;
+                    force = SpinningTyre(w, vLong, vLat, load, driveTorque, reversing, handbraking, dt);
+                }
+                else if (w.Grounded)
+                {
+                    force = ForceDemandTyre(w, vLong, vLat, load, forwardSpeed, reversing, handbraking, massPerWheel, dt);
+                    w.State.Omega = vLong / s.WheelRadius;
                 }
                 else
                 {
-                    // Slip angle with a speed floor so the tyre stays calm when nearly stopped.
-                    float slipAngle = Mathf.Atan2(vLat, Mathf.Max(Mathf.Abs(vLong), s.LowSpeedSlipFloor));
-                    float peak = s.PeakSlipAngleDeg * Mathf.Deg2Rad;
-                    fy = -Mathf.Sign(slipAngle) * s.Grip * handbrakeGrip * load * GripCurve(Mathf.Abs(slipAngle) / peak, s.GripFalloff);
-                    fxLimit = s.Grip * load;
-                    w.LateralSlip = 0f;
+                    continue;
                 }
 
-                float fx = 0f;
-                bool reversing = Input.Brake > 0f && Input.Throttle <= 0f && forwardSpeed < 1f;
-                if (!w.Front)
+                if (w.Grounded)
                 {
-                    if (reversing)
-                    {
-                        if (forwardSpeed * 3.6f > -s.MaxReverseKmh)
-                        {
-                            fx -= Input.Brake * s.ReverseForce * 0.5f;
-                        }
-                    }
-                    else
-                    {
-                        float falloff = Mathf.Clamp01(1f - SpeedKmh / s.MaxSpeedKmh);
-                        fx += Mathf.Clamp01(Input.Throttle) * s.DriveForce * 0.5f * falloff;
-                    }
+                    _body.AddForceAtPosition(normal * load + fwd * force.x + right * force.y, centre);
+                    MaxSlipAngleDeg = Mathf.Max(MaxSlipAngleDeg, Mathf.Abs(Mathf.Atan(w.State.LateralSlip) * Mathf.Rad2Deg));
+                    MaxSlipRatio = Mathf.Max(MaxSlipRatio, Mathf.Abs(w.State.SlipRatio));
                 }
+                w.SpinDeg += w.State.Omega * Mathf.Rad2Deg * dt;
+            }
 
-                float brakeShare = w.Front ? s.BrakeBiasFront : 1f - s.BrakeBiasFront;
-                float brake = reversing ? 0f : Mathf.Clamp01(Input.Brake) * s.BrakeForce * brakeShare * 0.5f;
-                if (handbraking)
-                {
-                    brake += s.HandbrakeForce * 0.5f;
-                }
-                brake += s.RollingResistance * load;
-                fx += Resist(vLong, brake, massPerWheel, dt);
-
-                if (s.PacejkaTyres)
-                {
-                    // Friction ellipse: the share of forward grip in use is taken off the side grip.
-                    fx = Mathf.Clamp(fx, -fxLimit, fxLimit);
-                    float used = fxLimit > 0f ? fx / fxLimit : 0f;
-                    fy *= Mathf.Sqrt(Mathf.Max(0f, 1f - used * used));
-                }
-                else
-                {
-                    // Friction circle: drive/brake force uses up side grip.
-                    float total = Mathf.Sqrt(fx * fx + fy * fy);
-                    if (total > fxLimit && total > 0f)
-                    {
-                        float scale = fxLimit / total;
-                        fx *= scale;
-                        fy *= scale;
-                    }
-                }
-
-                _body.AddForceAtPosition(normal * load + fwd * fx + right * fy, centre);
-                w.SpinDeg += vLong / s.WheelRadius * Mathf.Rad2Deg * dt;
+            if (spinModel)
+            {
+                LockDrivenWheels(s);
             }
 
             _body.AddForce(-velocity * velocity.magnitude * s.AeroDrag);
+            Feel.Step(_body, transform, Input, GroundedWheels, _wheels.Length, dt);
             UpdateVisuals(steerDeg);
+        }
+
+        private float AxleShare(CarSettings s, bool front)
+        {
+            return 0.5f * (front ? 1f - s.RearTorqueShare : s.RearTorqueShare);
+        }
+
+        private float DrivenOmega(CarSettings s)
+        {
+            float sum = 0f;
+            float weight = 0f;
+            foreach (Wheel w in _wheels)
+            {
+                float share = AxleShare(s, w.Front);
+                sum += w.State.Omega * share;
+                weight += share;
+            }
+            return weight > 0f ? sum / weight : 0f;
+        }
+
+        /// <summary>
+        /// Limited-slip coupling: pull every driven wheel's spin part way towards their average,
+        /// so one unloaded wheel can't take all the power.
+        /// </summary>
+        private void LockDrivenWheels(CarSettings s)
+        {
+            if (s.DiffLock <= 0f)
+            {
+                return;
+            }
+            float average = DrivenOmega(s);
+            foreach (Wheel w in _wheels)
+            {
+                if (AxleShare(s, w.Front) > 0f)
+                {
+                    w.State.Omega += Mathf.Clamp01(s.DiffLock) * (average - w.State.Omega);
+                }
+            }
+        }
+
+        /// <summary>Step 2 model: wheel spin, slip ratio and combined slip.</summary>
+        private Vector2 SpinningTyre(Wheel w, float vLong, float vLat, float load, float driveTorque, bool reversing,
+            bool handbraking, float dt)
+        {
+            CarSettings s = Settings;
+            float loadFactor = Tyre.LoadFactor(load, s.ReferenceLoad, s.LoadSensitivity);
+            float share = AxleShare(s, w.Front);
+            float brakeShare = w.Front ? s.BrakeBiasFront : 1f - s.BrakeBiasFront;
+            float brakeForce = reversing ? 0f : Mathf.Clamp01(Input.Brake) * s.BrakeForce * brakeShare * 0.5f;
+            if (handbraking)
+            {
+                brakeForce += s.HandbrakeForce * 0.5f;
+            }
+            brakeForce += s.RollingResistance * load;
+
+            var input = new WheelDynamics.Inputs
+            {
+                VLong = vLong,
+                VLat = vLat,
+                Load = load,
+                DriveTorque = driveTorque * share,
+                BrakeTorque = brakeForce * s.WheelRadius,
+                LateralPeak = (w.Front ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * loadFactor * load
+                    * (handbraking ? s.HandbrakeGripFactor : 1f),
+                LongitudinalPeak = s.LongitudinalPeak * s.Grip * loadFactor * load,
+                SpeedKmh = SpeedKmh,
+                Inertia = WheelDynamics.Inertia(s, share > 0f),
+                Grounded = w.Grounded,
+            };
+            return WheelDynamics.Step(ref w.State, input, s, dt);
+        }
+
+        /// <summary>Step 1 and M1 models: drive and brake forces pushed straight through the tyre.</summary>
+        private Vector2 ForceDemandTyre(Wheel w, float vLong, float vLat, float load, float forwardSpeed, bool reversing,
+            bool handbraking, float massPerWheel, float dt)
+        {
+            CarSettings s = Settings;
+            float handbrakeGrip = handbraking ? s.HandbrakeGripFactor : 1f;
+            float fy;
+            float fxLimit;
+            if (s.PacejkaTyres)
+            {
+                float loadFactor = Tyre.LoadFactor(load, s.ReferenceLoad, s.LoadSensitivity);
+                float lateralPeak = (w.Front ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * loadFactor * load;
+                w.State.LateralSlip = Tyre.RelaxLateral(w.State.LateralSlip, vLat, vLong, SpeedKmh, s, dt);
+                float slipDeg = Mathf.Atan(w.State.LateralSlip) * Mathf.Rad2Deg;
+                fy = -lateralPeak * handbrakeGrip * Tyre.MagicFormula(slipDeg, s.PacejkaPeakSlipDeg, s.PacejkaShape, s.PacejkaCurvature);
+                fxLimit = s.LongitudinalPeak * s.Grip * loadFactor * load;
+            }
+            else
+            {
+                // Slip angle with a speed floor so the tyre stays calm when nearly stopped.
+                float slipAngle = Mathf.Atan2(vLat, Mathf.Max(Mathf.Abs(vLong), s.LowSpeedSlipFloor));
+                float peak = s.PeakSlipAngleDeg * Mathf.Deg2Rad;
+                fy = -Mathf.Sign(slipAngle) * s.Grip * handbrakeGrip * load * GripCurve(Mathf.Abs(slipAngle) / peak, s.GripFalloff);
+                fxLimit = s.Grip * load;
+                w.State.LateralSlip = Mathf.Tan(slipAngle);
+            }
+
+            float fx = 0f;
+            if (!w.Front)
+            {
+                if (reversing)
+                {
+                    if (forwardSpeed * 3.6f > -s.MaxReverseKmh)
+                    {
+                        fx -= Input.Brake * s.ReverseForce * 0.5f;
+                    }
+                }
+                else
+                {
+                    float falloff = Mathf.Clamp01(1f - SpeedKmh / s.MaxSpeedKmh);
+                    fx += Mathf.Clamp01(Input.Throttle) * s.DriveForce * 0.5f * falloff;
+                }
+            }
+
+            float brakeShare = w.Front ? s.BrakeBiasFront : 1f - s.BrakeBiasFront;
+            float brake = reversing ? 0f : Mathf.Clamp01(Input.Brake) * s.BrakeForce * brakeShare * 0.5f;
+            if (handbraking)
+            {
+                brake += s.HandbrakeForce * 0.5f;
+            }
+            brake += s.RollingResistance * load;
+            fx += Resist(vLong, brake, massPerWheel, dt);
+
+            if (s.PacejkaTyres)
+            {
+                // Friction ellipse: the share of forward grip in use is taken off the side grip.
+                fx = Mathf.Clamp(fx, -fxLimit, fxLimit);
+                float used = fxLimit > 0f ? fx / fxLimit : 0f;
+                fy *= Mathf.Sqrt(Mathf.Max(0f, 1f - used * used));
+            }
+            else
+            {
+                // Friction circle: drive/brake force uses up side grip.
+                float total = Mathf.Sqrt(fx * fx + fy * fy);
+                if (total > fxLimit && total > 0f)
+                {
+                    float scale = fxLimit / total;
+                    fx *= scale;
+                    fy *= scale;
+                }
+            }
+            w.State.SlipRatio = 0f;
+            return new Vector2(fx, fy);
         }
 
         /// <summary>

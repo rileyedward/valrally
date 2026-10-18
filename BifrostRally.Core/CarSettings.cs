@@ -8,7 +8,7 @@ namespace BifrostRally.Core
     {
         // Body
         public float Mass = 1200f;
-        public float CenterOfMassHeight = -0.35f;
+        public float CenterOfMassHeight = -0.25f;
         public float AeroDrag = 0.45f;
 
         // Layout (local to the body centre)
@@ -40,6 +40,41 @@ namespace BifrostRally.Core
         public float RelaxationPerKmh = 0.02f;
         public float RelaxationSpeedFloor = 8f;
 
+        // Wheel spin: each wheel has its own spin speed, and slip ratio drives the forward force.
+        // Off falls back to pushing the drive/brake force straight through the tyre (step 1).
+        public bool WheelSpin = true;
+        public float WheelMass = 20f;
+        public float DrivelineInertia = 0.5f;
+        public float LongitudinalPeakSlip = 0.14f;
+        public float LongitudinalShape = 1.65f;
+        public float LongRelaxationLength = 0.35f;
+        public float SpinSubsteps = 10f;
+        // Fraction of each sub-step's spin change that is kept; lower is calmer but lazier wheels.
+        public float SpinResponse = 0.4f;
+
+        // Engine and gearbox (automatic). Torque in N·m at the crank.
+        public float MaxTorque = 420f;
+        public float PeakTorqueRpm = 5000f;
+        public float IdleRpm = 1000f;
+        public float RedlineRpm = 7800f;
+        public float LaunchRpm = 3800f;
+        public float EngineBrakeTorque = 60f;
+        public float Gear1 = 3.2f;
+        public float Gear2 = 2.2f;
+        public float Gear3 = 1.6f;
+        public float Gear4 = 1.25f;
+        public float Gear5 = 1.0f;
+        public float ReverseGear = 3.0f;
+        public float FinalDrive = 4.6f;
+        public float DriveEfficiency = 0.85f;
+        public float ShiftUpRpm = 7300f;
+        public float ShiftDownRpm = 3600f;
+        public float ShiftTime = 0.25f;
+        // 0 = front-wheel drive, 1 = rear-wheel drive, in between = AWD split.
+        public float RearTorqueShare = 0.65f;
+        // 0 = open, 1 = all driven wheels locked together.
+        public float DiffLock = 0.3f;
+
         // Simple tyres (the M1 model)
         public float PeakSlipAngleDeg = 8f;
         public float GripFalloff = 0.15f;
@@ -53,8 +88,8 @@ namespace BifrostRally.Core
         public float MaxReverseKmh = 30f;
         public float BrakeForce = 12000f;
         public float BrakeBiasFront = 0.6f;
-        public float HandbrakeForce = 4000f;
-        public float HandbrakeGripFactor = 0.35f;
+        public float HandbrakeForce = 12000f;
+        public float HandbrakeGripFactor = 0.7f;
 
         // Steering
         public float MaxSteerDeg = 32f;

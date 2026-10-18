@@ -7,7 +7,7 @@ namespace BifrostRally.Core
     /// </summary>
     public static class CarFactory
     {
-        public static RaycastCar CreateBoxCar(Vector3 position, Quaternion rotation, CarSettings settings, int layer, int groundMask, Material material = null)
+        public static RaycastCar CreateBoxCar(Vector3 position, Quaternion rotation, CarSettings settings, FeelSettings feel, int layer, int groundMask, Material material = null)
         {
             var root = new GameObject("BifrostRallyCar");
             root.transform.SetPositionAndRotation(position, rotation);
@@ -42,7 +42,7 @@ namespace BifrostRally.Core
 
             var car = root.AddComponent<RaycastCar>();
             car.Seat = seat;
-            car.Init(settings, groundMask, pivots, tyres);
+            car.Init(settings, feel, groundMask, pivots, tyres);
             return car;
         }
 
