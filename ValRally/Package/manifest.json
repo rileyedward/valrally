@@ -1,0 +1,10 @@
+{
+  "name": "ValRally",
+  "description": "Rally driving in Valheim, inspired by Art of Rally: a drivable car with a tilted chase camera, surfaces from the ground you drive on, and buildable stages with a timer, splits, ghost and pace notes.",
+  "version_number": "0.1.0",
+  "website_url": "",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2351",
+    "ValheimModding-Jotunn-2.30.2"
+  ]
+}

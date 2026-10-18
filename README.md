@@ -1,16 +1,16 @@
-# Bifrost Rally
+# ValRally
 
 Rally driving in Valheim, inspired by Art of Rally.
 
 ## Overview
 
-### What is Bifrost Rally?
+### What is ValRally?
 
-Bifrost Rally is a Valheim mod that brings Art of Rally style driving into Valheim's world. Spawn a rally car, walk up to it and get in: the camera swings into a tilted chase view, the world fades into a softer colour grade, and the car drives with weight transfer, grip that changes with the ground under each wheel, and handbrake slides. Build a start, checkpoints and a finish with the hammer and race your own stages against a timer, your best splits and a ghost of your best run, with pace notes called out as you go.
+ValRally is a Valheim mod that brings Art of Rally style driving into Valheim's world. Spawn a rally car, walk up to it and get in: the camera swings into a tilted chase view, the world fades into a softer colour grade, and the car drives with weight transfer, grip that changes with the ground under each wheel, and handbrake slides. Build a start, checkpoints and a finish with the hammer and race your own stages against a timer, your best splits and a ghost of your best run, with pace notes called out as you go.
 
 The car physics, camera, surfaces and stage timing live in a rally core that doesn't depend on Valheim, so the driving can be tuned and tested on its own.
 
-Bifrost Rally is not produced, approved or endorsed by Funselektor Labs or Iron Gate. It ships no code or assets from Art of Rally or Valheim.
+ValRally is not produced, approved or endorsed by Funselektor Labs or Iron Gate. It ships no code or assets from Art of Rally or Valheim.
 
 > **Status: early test build.** Getting in and out, the chase camera and the colour filter (M0 to M2) have been played in game. Handling, surfaces, rally pieces, ghosts and pace notes (M3 to M6) build and pass the offline sim but haven't been driven in game yet. See [docs/status.md](docs/status.md).
 
@@ -26,7 +26,7 @@ Bifrost Rally is not produced, approved or endorsed by Funselektor Labs or Iron 
 
 ### Prerequisites
 
-1. **Valheim** on Steam (Windows). Bifrost Rally targets Valheim **1.0.20** (network version 41). After a big Valheim update it may break until it's updated.
+1. **Valheim** on Steam (Windows). ValRally targets Valheim **1.0.20** (network version 41). After a big Valheim update it may break until it's updated.
 2. **BepInExPack_Valheim** 5.4.2351 and **Jotunn** 2.30.2. A mod manager installs both for you.
 
 ### Installation
@@ -34,7 +34,7 @@ Bifrost Rally is not produced, approved or endorsed by Funselektor Labs or Iron 
 **With a mod manager (recommended):**
 
 1. Install [r2modman](https://thunderstore.io/package/ebkr/r2modman/) and pick Valheim.
-2. Download `BifrostRally-<version>.zip` from the [Releases](../../releases) page.
+2. Download `ValRally-<version>.zip` from the [Releases](../../releases) page.
 3. In r2modman go to Settings → Import local mod and pick the zip. BepInExPack_Valheim and Jotunn are installed as dependencies.
 4. Press **Start modded**.
 
@@ -42,11 +42,13 @@ Bifrost Rally is not produced, approved or endorsed by Funselektor Labs or Iron 
 
 1. Install [BepInExPack_Valheim](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/) into your Valheim folder and start the game once.
 2. Install [Jotunn](https://valheim.thunderstore.io/package/ValheimModding/Jotunn/) by copying `Jotunn.dll` into `<Valheim>\BepInEx\plugins\`.
-3. Extract the release zip and copy `BifrostRally.dll` and `BifrostRally.Core.dll` from its `plugins` folder into `<Valheim>\BepInEx\plugins\BifrostRally\`.
+3. Extract the release zip and copy `ValRally.dll` and `ValRally.Core.dll` from its `plugins` folder into `<Valheim>\BepInEx\plugins\ValRally\`.
 
-To play plain Valheim again, disable the mod in r2modman or delete the `BifrostRally` folder.
+To play plain Valheim again, disable the mod in r2modman or delete the `ValRally` folder.
 
-Use Bifrost Rally in single player or on your own server. The car isn't synced over the network yet, so other players won't see it.
+**Coming from Bifrost Rally** (the mod's name before 0.1.0): delete the old `<Valheim>\BepInEx\plugins\BifrostRally\` folder so only ValRally loads. On first start ValRally copies your settings from `com.riley.bifrostrally.cfg` and moves your saved stages and tunes to the new folders. Rally pieces placed with the old build won't load, so place them again.
+
+Use ValRally in single player or on your own server. The car isn't synced over the network yet, so other players won't see it.
 
 ### Controls
 
@@ -79,7 +81,7 @@ To race a stage, build a **Rally start**, some **Rally checkpoints** and a **Ral
 
 ### Configuration
 
-Settings are in `BepInEx\config\com.riley.bifrostrally.cfg`, created on first run. Every value can also be changed in game with `rally_set`. The main switches:
+Settings are in `BepInEx\config\com.riley.valrally.cfg`, created on first run. Every value can also be changed in game with `rally_set`. The main switches:
 
 | Setting | Default | What it does |
 |---|---|---|
@@ -96,7 +98,7 @@ Settings are in `BepInEx\config\com.riley.bifrostrally.cfg`, created on first ru
 | `[Stages] Enabled` | `true` | Rally pieces in the hammer menu |
 | `[Stages] Ghost` / `PaceNotes` | `true` | Ghost of your best run, pace note calls |
 
-The rest of the file holds the car's physics (`[Car]`, `[Feel]`), both camera presets (`[Camera Close]`, `[Camera High]`), the colour filter (`[Filter]`), each surface's grip (`[Surface <Name>]`) and stage timing (`[Stage Timing]`). Best times and ghosts are saved per world in `BepInEx\config\bifrostrally-stages\`.
+The rest of the file holds the car's physics (`[Car]`, `[Feel]`), both camera presets (`[Camera Close]`, `[Camera High]`), the colour filter (`[Filter]`), each surface's grip (`[Surface <Name>]`) and stage timing (`[Stage Timing]`). Best times and ghosts are saved per world in `BepInEx\config\valrally-stages\`.
 
 ## Development
 
@@ -118,7 +120,7 @@ The rest of the file holds the car's physics (`[Car]`, `[Feel]`), both camera pr
     copy Environment.props.example Environment.props
     ```
 
-2. Build in Debug. This copies `BifrostRally.dll` and `BifrostRally.Core.dll` into `<Valheim>\BepInEx\plugins\BifrostRally` (or `MOD_DEPLOYPATH` from `Environment.props`). Close Valheim first:
+2. Build in Debug. This copies `ValRally.dll` and `ValRally.Core.dll` into `<Valheim>\BepInEx\plugins\ValRally` (or `MOD_DEPLOYPATH` from `Environment.props`). Close Valheim first:
 
     ```bash
     dotnet build -c Debug
@@ -130,9 +132,9 @@ The rest of the file holds the car's physics (`[Car]`, `[Feel]`), both camera pr
 
 | Folder | What it is |
 |---|---|
-| `BifrostRally.Core/` | The rally core: raycast car, tyres, drivetrain, feel layer, chase camera, colour filter, surfaces, stages, ghost and pace notes. Only references UnityEngine |
-| `BifrostRally/` | The Valheim plugin (BepInEx, Jotunn, Harmony): driving, input, ground to surface, effects, rally pieces, HUD and console commands. `Package/` holds the Thunderstore manifest and icon |
-| `BifrostRally.Sim/` | Offline handling checks and stage-logic tests for the core. Runs outside the game |
+| `ValRally.Core/` | The rally core: raycast car, tyres, drivetrain, feel layer, chase camera, colour filter, surfaces, stages, ghost and pace notes. Only references UnityEngine |
+| `ValRally/` | The Valheim plugin (BepInEx, Jotunn, Harmony): driving, input, ground to surface, effects, rally pieces, HUD and console commands. `Package/` holds the Thunderstore manifest and icon |
+| `ValRally.Sim/` | Offline handling checks and stage-logic tests for the core. Runs outside the game |
 | `scripts/` | Post-build deploy scripts (from the Jotunn mod stub) |
 | `libraries/` | `pdb2mdb.exe`, used to make Mono debug symbols for Debug builds |
 | `tools/release/` | The release build script |
@@ -158,7 +160,7 @@ Releases are built locally, because the plugin compiles against Valheim's assemb
 powershell -ExecutionPolicy Bypass -File tools\release\build-release.ps1
 ```
 
-This builds the solution, runs the sim and writes `dist\BifrostRally-<version>.zip` (Thunderstore layout) with a `.sha256` file next to it. See [docs/releasing.md](docs/releasing.md) for the smoke test and how to publish.
+This builds the solution, runs the sim and writes `dist\ValRally-<version>.zip` (Thunderstore layout) with a `.sha256` file next to it, then copies both into your Downloads folder so you can drag them onto a GitHub release. See [docs/releasing.md](docs/releasing.md) for the smoke test and how to publish.
 
 ## Testing
 
@@ -166,14 +168,14 @@ Build everything and run the offline sim, which checks launch, step steer, handb
 
 ```bash
 dotnet build -c Release
-BifrostRally.Sim\bin\Release\net48\BifrostRally.Sim.exe
+ValRally.Sim\bin\Release\net48\ValRally.Sim.exe
 ```
 
 In game, `rally_test compare` runs a scripted handling test on a flat platform and logs the results to `BepInEx\LogOutput.log`.
 
 ## Data and Licensing
 
-Bifrost Rally is released under the [MIT License](LICENSE).
+ValRally is released under the [MIT License](LICENSE).
 
 It contains no Art of Rally or Valheim code or assets. Handling was tuned by studying how Art of Rally drives and how its car code is put together. None of that code, and no decompiled output, is in this repository or the release, and nothing from Art of Rally is loaded at runtime. Particles and sounds are Valheim's own, used in the running game through its footstep effects; nothing is copied out.
 

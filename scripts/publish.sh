@@ -53,7 +53,7 @@ if [ "$target" = "Debug" ]; then
     cp "$targetPath/$targetAssembly" "$plug"
     # copy if it exists
     [ -e "$targetPath/$name.pdb" ] && cp "$targetPath/$name.pdb" "$plug"
-    [ -e "$targetPath/BifrostRally.Core.dll" ] && cp "$targetPath/BifrostRally.Core.dll" "$plug"
+    [ -e "$targetPath/ValRally.Core.dll" ] && cp "$targetPath/ValRally.Core.dll" "$plug"
 fi
 
 # Release packages are built by tools/release/build-release.ps1

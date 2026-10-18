@@ -47,18 +47,23 @@ if ($Target.Equals("Debug")) {
       $DeployPath = "$ValheimPath\BepInEx\plugins"
     }
     
+    # The mod was called Bifrost Rally before 0.1.0. Both loading at once would clash.
+    if (Test-Path "$DeployPath\BifrostRally") {
+        Write-Warning "Old $DeployPath\BifrostRally folder found. Delete it so only ValRally loads."
+    }
+
     $plug = New-Item -Type Directory -Path "$DeployPath\$name" -Force
     Write-Host "Copy $TargetAssembly to $plug"
     Copy-Item -Path "$TargetPath\$name.dll" -Destination "$plug" -Force
     Copy-Item -Path "$TargetPath\$name.pdb" -Destination "$plug" -Force
     Copy-Item -Path "$TargetPath\$name.dll.mdb" -Destination "$plug" -Force
-    if (Test-Path "$TargetPath\BifrostRally.Core.dll") {
-        Copy-Item -Path "$TargetPath\BifrostRally.Core.dll" -Destination "$plug" -Force
-        Copy-Item -Path "$TargetPath\BifrostRally.Core.pdb" -Destination "$plug" -Force
+    if (Test-Path "$TargetPath\ValRally.Core.dll") {
+        Copy-Item -Path "$TargetPath\ValRally.Core.dll" -Destination "$plug" -Force
+        Copy-Item -Path "$TargetPath\ValRally.Core.pdb" -Destination "$plug" -Force
     }
 }
 
-# Release packages are built by toolseleaseuild-release.ps1
+# Release packages are built by tools\release\build-release.ps1
 
 # Pop Location
 Pop-Location

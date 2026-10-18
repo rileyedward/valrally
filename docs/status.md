@@ -2,7 +2,7 @@
 
 Targets Valheim 1.0.20 (network version 41, Unity 6000.0.75f1), BepInExPack_Valheim 5.4.2351 and Jotunn 2.30.2.
 
-M0–M2 have been played in game. **Nothing from M3 on has been driven in game yet.** It's checked by builds and the offline sim (`BifrostRally.Sim`: handling checks per surface plus stage-logic tests) only, and a playtest is next.
+M0–M2 have been played in game. **Nothing from M3 on has been driven in game yet.** It's checked by builds and the offline sim (`ValRally.Sim`: handling checks per surface plus stage-logic tests) only, and a playtest is next.
 
 ## Milestones
 
@@ -24,7 +24,7 @@ M0–M2 have been played in game. **Nothing from M3 on has been driven in game y
   - Checkpoints count in order (8 m radius, height ignored), then the finish.
   - The route is chained automatically, nearest first, from the start.
   - Timer and splits on screen, with deltas against your best.
-  - Best time is saved per world and start position in `BepInEx/config/bifrostrally-stages/`.
+  - Best time is saved per world and start position in `BepInEx/config/valrally-stages/`.
   - `rally_stage` and `rally_stage forget`. Settings are in `[Stages]` and `[Stage Timing]`.
 - M6, partial (in the `m5` build too):
   - Ghost of your best run as a translucent box (`rally_set Stages.Ghost false` to hide it).
@@ -45,7 +45,7 @@ M0–M2 have been played in game. **Nothing from M3 on has been driven in game y
 - Gates are radius checks around the piece, not lines, so piece rotation doesn't matter.
 - Stage order is nearest-first. Two stages need to be far enough apart that one's checkpoints aren't nearer than its own finish.
 - Pace notes treat each checkpoint as one corner. More checkpoints means finer notes.
-- The rally core (`BifrostRally.Core`) only references UnityEngine, so the car, camera, surfaces and timing don't depend on Valheim.
+- The rally core (`ValRally.Core`) only references UnityEngine, so the car, camera, surfaces and timing don't depend on Valheim.
 
 ## Unverified guesses that could break in game
 
