@@ -28,8 +28,24 @@ namespace BifrostRally.Valheim
             Despawn();
             Vector3 forward = Vector3.ProjectOnPlane(player.transform.forward, Vector3.up).normalized;
             Vector3 position = player.transform.position + forward * 4f + Vector3.up * 1f;
-            Car = CarFactory.CreateBoxCar(position, Quaternion.LookRotation(forward), settings, LayerMask.NameToLayer("vehicle"), GroundMask);
+            Car = CarFactory.CreateBoxCar(position, Quaternion.LookRotation(forward), settings, LayerMask.NameToLayer("vehicle"), GroundMask, FindCarMaterial());
             Jotunn.Logger.LogInfo($"Spawned rally car at {position}");
+        }
+
+        /// <summary>
+        /// Unity's default primitive material renders pink in Valheim, so borrow the
+        /// vanilla cart's material, which uses a shader the game actually ships.
+        /// </summary>
+        private static Material FindCarMaterial()
+        {
+            GameObject cart = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab("Cart") : null;
+            MeshRenderer renderer = cart != null ? cart.GetComponentInChildren<MeshRenderer>() : null;
+            if (renderer == null)
+            {
+                Jotunn.Logger.LogWarning("Cart material not found, the car will render without one");
+                return null;
+            }
+            return renderer.sharedMaterial;
         }
 
         public static void Despawn()
@@ -64,7 +80,9 @@ namespace BifrostRally.Valheim
                 {
                     StopDriving();
                 }
-                else if (Vector3.Distance(player.transform.position, Car.transform.position) <= EnterDistance)
+                // Not during the Valkyrie intro, and only once the Viking stands on the ground.
+                else if (!player.InIntro() && player.IsOnGround() &&
+                    Vector3.Distance(player.transform.position, Car.transform.position) <= EnterDistance)
                 {
                     StartDriving(player);
                 }
