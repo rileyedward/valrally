@@ -47,6 +47,34 @@ namespace BifrostRally.Valheim
             BindFields(SectionFor(CameraPreset.Close), ChaseCameraSettings.Close());
             BindFields(SectionFor(CameraPreset.High), ChaseCameraSettings.High());
             BindFields(FilterSection, new ColorFilterSettings());
+            MigrateDefaults();
+        }
+
+        /// <summary>
+        /// Settings whose default changed in a later build. A config written before that build
+        /// gets the new default once, so old files don't keep stale tuning. Add a line per change.
+        /// </summary>
+        private static readonly (int Version, string Section, string Key)[] ChangedDefaults =
+        {
+            (1, CarSection, nameof(CarSettings.CenterOfMassHeight)),
+            (1, CarSection, nameof(CarSettings.HandbrakeForce)),
+            (1, CarSection, nameof(CarSettings.HandbrakeGripFactor)),
+        };
+
+        private void MigrateDefaults()
+        {
+            ConfigEntry<int> version = _config.Bind("Internal", "DefaultsVersion", 0, "Used to apply changed defaults once. Don't edit.");
+            int latest = 0;
+            foreach (var change in ChangedDefaults)
+            {
+                latest = Mathf.Max(latest, change.Version);
+                if (change.Version > version.Value && TryFind(change.Section + "." + change.Key, out _, out _, out ConfigEntryBase entry))
+                {
+                    entry.BoxedValue = entry.DefaultValue;
+                    Jotunn.Logger.LogInfo($"Config: {change.Section}.{change.Key} reset to new default {entry.GetSerializedValue()}");
+                }
+            }
+            version.Value = Mathf.Max(version.Value, latest);
         }
 
         public static string SectionFor(CameraPreset preset) => "Camera " + preset;
