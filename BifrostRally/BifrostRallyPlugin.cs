@@ -23,6 +23,11 @@ namespace BifrostRally.Valheim
             CommandManager.Instance.AddConsoleCommand(new SpawnCarCommand(_carConfig));
             CommandManager.Instance.AddConsoleCommand(new RemoveCarCommand());
             CommandManager.Instance.AddConsoleCommand(new TyresCommand(_carConfig));
+            CommandManager.Instance.AddConsoleCommand(new SetCommand(_carConfig));
+            CommandManager.Instance.AddConsoleCommand(new GetCommand(_carConfig));
+            CommandManager.Instance.AddConsoleCommand(new SaveCommand(_carConfig));
+            CommandManager.Instance.AddConsoleCommand(new LoadCommand(_carConfig));
+            CommandManager.Instance.AddConsoleCommand(new TestCommand(this));
             new Harmony(PluginGUID).PatchAll();
         }
 
