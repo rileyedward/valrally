@@ -1,3 +1,7 @@
+# Bifrost Rally
+
+Targets Valheim 1.0.20 (network version 41), Unity 6000.0.75f1, BepInExPack_Valheim 5.4.2351, Jotunn 2.30.2.
+
 # JötunnModStub
 
 A Valheim mod stub project using [Jötunn](https://github.com/Valheim-Modding/Jotunn) including build tools and a basic Unity project stub.
