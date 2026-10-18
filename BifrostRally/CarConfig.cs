@@ -166,6 +166,32 @@ namespace BifrostRally.Valheim
             return false;
         }
 
+        /// <summary>
+        /// Any other entry in the file (Controls, Camera preset, ...), by "Section.Key" or "Key".
+        /// These are read live wherever they're used, so changing them needs no extra step.
+        /// </summary>
+        public bool TryFindOther(string key, out ConfigEntryBase entry)
+        {
+            string wantedSection = null;
+            int dot = key.LastIndexOf('.');
+            if (dot > 0)
+            {
+                wantedSection = key.Substring(0, dot);
+                key = key.Substring(dot + 1);
+            }
+            foreach (ConfigDefinition definition in _config.Keys)
+            {
+                if (string.Equals(definition.Key, key, System.StringComparison.OrdinalIgnoreCase) &&
+                    (wantedSection == null || string.Equals(definition.Section, wantedSection, System.StringComparison.OrdinalIgnoreCase)))
+                {
+                    entry = _config[definition];
+                    return true;
+                }
+            }
+            entry = null;
+            return false;
+        }
+
         /// <summary>All settings whose name contains the text, for rally_get.</summary>
         public IEnumerable<string> Describe(string contains)
         {

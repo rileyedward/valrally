@@ -78,6 +78,13 @@ namespace BifrostRally.Valheim
             }
             if (!_config.TryFind(args[0], out string section, out FieldInfo field, out ConfigEntryBase entry))
             {
+                if (_config.TryFindOther(args[0], out ConfigEntryBase other))
+                {
+                    string old = other.GetSerializedValue();
+                    other.SetSerializedValue(args[1]);
+                    LiveTuning.Print($"{other.Definition.Section}.{other.Definition.Key}: {old} -> {other.GetSerializedValue()}");
+                    return;
+                }
                 LiveTuning.Print($"No setting called {args[0]}. Try rally_get {args[0]}");
                 return;
             }
