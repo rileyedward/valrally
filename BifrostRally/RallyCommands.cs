@@ -1,3 +1,4 @@
+using BifrostRally.Core;
 using Jotunn.Entities;
 
 namespace BifrostRally.Valheim
@@ -13,11 +14,13 @@ namespace BifrostRally.Valheim
 
         public override string Name => "rally_spawn";
 
-        public override string Help => "Spawn the rally car in front of you (re-reads [Car] settings from the config file)";
+        public override string Help => "Spawn the rally car in front of you (re-reads the config file)";
 
         public override void Run(string[] args)
         {
-            RallyDriver.Spawn(_config.Load());
+            _config.Reload();
+            RallyDriver.Spawn(_config.Get<CarSettings>());
+            RallyView.Configure(_config.Get<ChaseCameraSettings>(), _config.Get<ColorFilterSettings>());
         }
     }
 

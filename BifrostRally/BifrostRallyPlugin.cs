@@ -19,6 +19,7 @@ namespace BifrostRally.Valheim
         {
             Jotunn.Logger.LogInfo($"{PluginName} {PluginVersion} loaded. Unity {Application.unityVersion}");
             _carConfig = new CarConfig(Config);
+            RallyView.Configure(_carConfig.Get<Core.ChaseCameraSettings>(), _carConfig.Get<Core.ColorFilterSettings>());
             CommandManager.Instance.AddConsoleCommand(new SpawnCarCommand(_carConfig));
             CommandManager.Instance.AddConsoleCommand(new RemoveCarCommand());
             new Harmony(PluginGUID).PatchAll();
@@ -26,6 +27,7 @@ namespace BifrostRally.Valheim
 
         private void Update()
         {
+            RallyView.BlendTime = _carConfig.BlendTime.Value;
             RallyDriver.Update(_carConfig.DriveKey.Value);
         }
     }
