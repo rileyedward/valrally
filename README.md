@@ -31,7 +31,15 @@ ValRally is not produced, approved or endorsed by Funselektor Labs or Iron Gate.
 
 ### Installation
 
-**With a mod manager (recommended):**
+**With the launcher (easiest):**
+
+1. Download [`ValRally-Launcher.exe`](https://github.com/rileyedward/valrally/releases/latest/download/ValRally-Launcher.exe) from the [Releases](../../releases) page and run it. Windows may warn that it's from an unknown publisher, because the exe isn't signed: choose More info, then Run anyway.
+2. Press **Install**. The launcher finds Valheim through Steam (or opens its Steam page if you don't have it), then downloads BepInExPack_Valheim and Jotunn from Thunderstore and the latest ValRally from GitHub.
+3. Press **Play**.
+
+The launcher installs everything into its own folder, `%APPDATA%\ValRally`, so Valheim started from Steam stays vanilla. **Update** appears when there's a newer ValRally on GitHub, and **Uninstall** removes it all again (it asks whether to keep your settings, stages and tunes). See [docs/launcher.md](docs/launcher.md) for how it works.
+
+**With a mod manager:**
 
 1. Install [r2modman](https://thunderstore.io/package/ebkr/r2modman/) and pick Valheim.
 2. Download `ValRally-<version>.zip` from the [Releases](../../releases) page.
@@ -44,7 +52,7 @@ ValRally is not produced, approved or endorsed by Funselektor Labs or Iron Gate.
 2. Install [Jotunn](https://valheim.thunderstore.io/package/ValheimModding/Jotunn/) by copying `Jotunn.dll` into `<Valheim>\BepInEx\plugins\`.
 3. Extract the release zip and copy `ValRally.dll` and `ValRally.Core.dll` from its `plugins` folder into `<Valheim>\BepInEx\plugins\ValRally\`.
 
-To play plain Valheim again, disable the mod in r2modman or delete the `ValRally` folder.
+To play plain Valheim again with the launcher, start Valheim from Steam as usual. With r2modman, disable the mod; with a manual install, delete the `ValRally` folder.
 
 **Coming from Bifrost Rally** (the mod's name before 0.1.0): delete the old `<Valheim>\BepInEx\plugins\BifrostRally\` folder so only ValRally loads. On first start ValRally copies your settings from `com.riley.bifrostrally.cfg` and moves your saved stages and tunes to the new folders. Rally pieces placed with the old build won't load, so place them again.
 
@@ -135,10 +143,11 @@ The rest of the file holds the car's physics (`[Car]`, `[Feel]`), both camera pr
 | `ValRally.Core/` | The rally core: raycast car, tyres, drivetrain, feel layer, chase camera, colour filter, surfaces, stages, ghost and pace notes. Only references UnityEngine |
 | `ValRally/` | The Valheim plugin (BepInEx, Jotunn, Harmony): driving, input, ground to surface, effects, rally pieces, HUD and console commands. `Package/` holds the Thunderstore manifest and icon |
 | `ValRally.Sim/` | Offline handling checks and stage-logic tests for the core. Runs outside the game |
+| `ValRally.Launcher/` | The Windows launcher (`ValRally-Launcher.exe`): finds Valheim, installs BepInEx, Jotunn and ValRally into its own profile, and plays, updates and uninstalls. Standalone; doesn't reference the mod or the core |
 | `scripts/` | Post-build deploy scripts (from the Jotunn mod stub) |
 | `libraries/` | `pdb2mdb.exe`, used to make Mono debug symbols for Debug builds |
 | `tools/release/` | The release build script |
-| `docs/` | [Status and decisions](docs/status.md) and [releasing](docs/releasing.md) |
+| `docs/` | [Status and decisions](docs/status.md), [releasing](docs/releasing.md) and [the launcher](docs/launcher.md) |
 
 ## How It Works
 
@@ -160,7 +169,7 @@ Releases are built locally, because the plugin compiles against Valheim's assemb
 powershell -ExecutionPolicy Bypass -File tools\release\build-release.ps1
 ```
 
-This builds the solution, runs the sim and writes `dist\ValRally-<version>.zip` (Thunderstore layout) with a `.sha256` file next to it, then copies both into your Downloads folder so you can drag them onto a GitHub release. See [docs/releasing.md](docs/releasing.md) for the smoke test and how to publish.
+This builds the solution, runs the sim and writes `dist\ValRally-<version>.zip` (Thunderstore layout) and `dist\ValRally-Launcher.exe`, each with a `.sha256` file next to it, then copies all four into your Downloads folder so you can drag them onto a GitHub release. See [docs/releasing.md](docs/releasing.md) for the smoke test and how to publish.
 
 ## Testing
 

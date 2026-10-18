@@ -1,4 +1,4 @@
-﻿# ValRally
+# ValRally
 
 Rally driving in Valheim, inspired by Art of Rally.
 
@@ -13,6 +13,10 @@ Rally driving in Valheim, inspired by Art of Rally.
 - **Live tuning**: Change any handling setting from the console while you drive.
 
 ## Installation
+
+### With the launcher
+
+Download `ValRally-Launcher.exe` from the [GitHub releases](https://github.com/rileyedward/valrally/releases), run it and press **Install**, then **Play**. It installs BepInExPack_Valheim, Jotunn and ValRally into its own folder, so Valheim started from Steam stays vanilla.
 
 ### With a mod manager
 

@@ -12,7 +12,7 @@ namespace ValRally.Valheim
     {
         public const string PluginGUID = "com.riley.valrally";
         public const string PluginName = "ValRally";
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.2.0";
 
         private CarConfig _carConfig;
 

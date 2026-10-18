@@ -46,9 +46,11 @@ M0–M2 have been played in game. **Nothing from M3 on has been driven in game y
 - Stage order is nearest-first. Two stages need to be far enough apart that one's checkpoints aren't nearer than its own finish.
 - Pace notes treat each checkpoint as one corner. More checkpoints means finer notes.
 - The rally core (`ValRally.Core`) only references UnityEngine, so the car, camera, surfaces and timing don't depend on Valheim.
+- The launcher installs into its own profile (`%APPDATA%\ValRally`) and starts Valheim through Steam with doorstop arguments, like r2modman, instead of installing BepInEx into the game folder. It pins BepInEx and Jotunn to the versions in ValRally's manifest rather than taking the newest. It targets .NET Framework 4.8 so the exe is one small file with nothing else to install.
 
 ## Unverified guesses that could break in game
 
+- The launcher's doorstop 4 arguments (`--doorstop-enabled`, `--doorstop-target-assembly`) reaching Valheim through `steam.exe -applaunch`. If Play starts plain Valheim, see [launcher.md](launcher.md#if-play-starts-plain-valheim).
 - Vanilla prefab names `piece_banner01/02/03`, `wood_pole2`, `wood_pole` and `piece_groundtorch_wood`. If none exist, the log says "No vanilla piece found".
 - The terrain collider sitting on or under the `Heightmap` object. If not, `rally_surface` reports "static collider …".
 - The `Sprites/Default` shader being available for the ghost. If not, it falls back to the cart material and isn't see-through.

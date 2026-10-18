@@ -2,15 +2,16 @@
 
 Releases are built locally, because the plugin compiles against Valheim's own DLLs, which can't be put in a repo or a CI runner.
 
-1. Bump the version in `ValRally/ValRallyPlugin.cs` (`PluginVersion`) and `ValRally/Package/manifest.json` (`version_number`), and add an entry to `ValRally/CHANGELOG.md`. The script stops if the two versions differ.
+1. Bump the version in `ValRally/ValRallyPlugin.cs` (`PluginVersion`), `ValRally/Package/manifest.json` (`version_number`) and `ValRally.Launcher/ValRally.Launcher.csproj` (`<Version>`), and add an entry to `ValRally/CHANGELOG.md`. The script stops if the versions differ.
 2. `powershell -ExecutionPolicy Bypass -File tools\release\build-release.ps1`
    - builds the solution in Release and runs the offline sim (`ValRally.Sim`), stopping if any check fails;
-   - writes `dist\ValRally-<version>.zip` in Thunderstore's layout, with a `.sha256` next to it.
-   - copies the zip and `.sha256` into your Downloads folder.
-3. Smoke test: import the zip into an empty r2modman profile (Settings → Import local mod), start Valheim from it in an offline world, run `rally_spawn`, press `F8` and drive. `BepInEx\LogOutput.log` should show `ValRally <version> loaded`.
+   - writes `dist\ValRally-<version>.zip` in Thunderstore's layout, with a `.sha256` next to it;
+   - copies the launcher to `dist\ValRally-Launcher.exe`, with its own `.sha256`;
+   - copies all four files into your Downloads folder.
+3. Smoke test the launcher with the new zip before publishing, as in [docs/launcher.md](launcher.md#testing-a-build-before-its-released). Or import the zip into an empty r2modman profile (Settings → Import local mod), start Valheim from it in an offline world, run `rally_spawn`, press `F8` and drive. `BepInEx\LogOutput.log` should show `ValRally <version> loaded`.
 4. Publish:
-   - GitHub: on the repo's Releases page, Draft a new release, tag `v<version>`, and drag `ValRally-<version>.zip` and `ValRally-<version>.zip.sha256` from Downloads onto it. Or from the repo folder: `gh release create v<version> dist\ValRally-<version>.zip dist\ValRally-<version>.zip.sha256 --title "ValRally <version>" --notes "..."`
-   - Thunderstore: upload the same zip at <https://thunderstore.io/package/create/> under the Valheim community. Fill in `website_url` in the manifest first once the GitHub repo exists.
+   - GitHub: on the repo's Releases page, Draft a new release, tag `v<version>`, and drag `ValRally-<version>.zip`, `ValRally-Launcher.exe` and both `.sha256` files from Downloads onto it. Or from the repo folder: `gh release create v<version> dist\ValRally-<version>.zip dist\ValRally-<version>.zip.sha256 dist\ValRally-Launcher.exe dist\ValRally-Launcher.exe.sha256 --title "ValRally <version>" --notes "..."`. Don't mark it as a pre-release: the launcher only looks at the latest full release. Keep the launcher's file name the same every time, so the README's download link keeps working.
+   - Thunderstore: upload the same zip at <https://thunderstore.io/package/create/> under the Valheim community. The launcher isn't uploaded there.
 
 ## What's in the zip, and what isn't
 
