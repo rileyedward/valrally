@@ -14,7 +14,11 @@ namespace BifrostRally.Core
         public float FastSpeedStart = 20f;
         public float FastSpeedEnd = 35f;
         public float FastAimRaise = 0.3f;
-        public float YawFollowRate = 3.5f;
+        // How fast the camera swings round behind the car. Low values let the car rotate in frame first.
+        public float YawFollowRate = 1.5f;
+        // 0 = follow where the car points, 1 = follow where it is travelling (reads drifts better).
+        public float VelocityHeading = 0.7f;
+        public float VelocityHeadingMinSpeed = 4f;
         public float HeightFollowRate = 4f;
         public float SpinHoldStart = 2.8f;
         public float SpinHoldEnd = 3.5f;
@@ -48,6 +52,7 @@ namespace BifrostRally.Core
             FastFovScale = 1.1f,
             FastAimRaise = 2f,
             YawFollowRate = 1.5f,
+            VelocityHeading = 0f,
             HeightFollowRate = 2f,
             MinDistanceScale = 0.45f,
         };
@@ -105,7 +110,7 @@ namespace BifrostRally.Core
             // Fade heading follow out while the car spins quickly.
             float spin = Mathf.Abs(yawRate);
             float follow = 1f - Mathf.InverseLerp(s.SpinHoldStart, s.SpinHoldEnd, spin);
-            float targetYaw = HeadingOf(carForward, _yaw);
+            float targetYaw = TargetHeading(carForward, carVelocity, s);
             _yaw = Mathf.LerpAngle(_yaw, targetYaw, Mathf.Clamp01(s.YawFollowRate * follow * dt));
             _height = Mathf.Lerp(_height, carPosition.y, Mathf.Clamp01(s.HeightFollowRate * dt));
 
@@ -135,6 +140,24 @@ namespace BifrostRally.Core
                 Rotation = Quaternion.LookRotation(aim - position, Vector3.up),
                 Fov = s.Fov * Mathf.Lerp(1f, s.FastFovScale, _fastT),
             };
+        }
+
+        /// <summary>
+        /// Blend the car's facing towards its direction of travel. Only when moving forwards at speed,
+        /// so reversing or crawling never swings the camera round to the front.
+        /// </summary>
+        private float TargetHeading(Vector3 carForward, Vector3 carVelocity, ChaseCameraSettings s)
+        {
+            float facing = HeadingOf(carForward, _yaw);
+            Vector3 flat = new Vector3(carVelocity.x, 0f, carVelocity.z);
+            float speed = flat.magnitude;
+            if (s.VelocityHeading <= 0f || speed < s.VelocityHeadingMinSpeed || Vector3.Dot(flat, carForward) <= 0f)
+            {
+                return facing;
+            }
+            float travel = HeadingOf(flat, facing);
+            float weight = s.VelocityHeading * Mathf.InverseLerp(s.VelocityHeadingMinSpeed, s.VelocityHeadingMinSpeed * 2f, speed);
+            return Mathf.LerpAngle(facing, travel, weight);
         }
 
         private static float HeadingOf(Vector3 forward, float fallback)
