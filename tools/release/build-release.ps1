@@ -1,5 +1,5 @@
-# Builds the ValRally release zip: dist\ValRally-<version>.zip, plus a copy of the zip and its
-# .sha256 in your Downloads folder, ready to drag onto a GitHub release.
+# Builds the ValRally release: dist\ValRally-<version>.zip and dist\ValRally-Launcher.exe, each
+# with a .sha256, and copies all four into your Downloads folder, ready to drag onto a GitHub release.
 #
 #   powershell -ExecutionPolicy Bypass -File tools\release\build-release.ps1
 #
@@ -10,6 +10,9 @@
 #   plugins\ValRally.Core.dll  the rally core it depends on
 #
 # Never in the zip: Valheim, BepInEx or Jotunn files, or anything from Art of Rally.
+#
+# The launcher keeps the same name every release, so the README can link to
+# releases/latest/download/ValRally-Launcher.exe.
 #
 # Needs: .NET SDK and a Valheim install (the plugin compiles against the game's own DLLs,
 # which is why releases are built locally). Set the path in Environment.props if it isn't
@@ -22,9 +25,12 @@ $manifest = Get-Content "$project\Package\manifest.json" -Raw | ConvertFrom-Json
 $version = $manifest.version_number
 $pluginVersion = [regex]::Match((Get-Content "$project\ValRallyPlugin.cs" -Raw), 'PluginVersion = "([^"]+)"').Groups[1].Value
 if ($pluginVersion -ne $version) { throw "manifest.json is $version but PluginVersion is $pluginVersion" }
+$launcherVersion = ([xml](Get-Content "$root\ValRally.Launcher\ValRally.Launcher.csproj" -Raw)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+if ($launcherVersion -ne $version) { throw "manifest.json is $version but the launcher's <Version> is $launcherVersion" }
 
 $stage = Join-Path $root 'dist\ValRally'
 $zip = Join-Path $root "dist\ValRally-$version.zip"
+$launcher = Join-Path $root 'dist\ValRally-Launcher.exe'
 
 Write-Host "ValRally $version -> $zip"
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
@@ -55,11 +61,20 @@ try {
     }
 } finally { $archive.Dispose() }
 $kb = [math]::Round((Get-Item $zip).Length / 1KB)
-$sha = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-Set-Content "$zip.sha256" "$sha  $(Split-Path $zip -Leaf)" -Encoding ascii
+function Write-Sha256($file) {
+    $sha = (Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
+    Set-Content "$file.sha256" "$sha  $(Split-Path $file -Leaf)" -Encoding ascii
+    return $sha
+}
+$sha = Write-Sha256 $zip
 Write-Host "done: $zip ($kb KB)  sha256 $sha"
+
+Write-Host '== launcher'
+Copy-Item "$root\ValRally.Launcher\bin\Release\net48\ValRally-Launcher.exe" $launcher -Force
+$sha = Write-Sha256 $launcher
+Write-Host "done: $launcher ($([math]::Round((Get-Item $launcher).Length / 1KB)) KB)  sha256 $sha"
 
 $downloads = (New-Object -ComObject Shell.Application).Namespace('shell:Downloads').Self.Path
 if (-not $downloads) { $downloads = Join-Path $env:USERPROFILE 'Downloads' }
-Copy-Item $zip, "$zip.sha256" $downloads -Force
+Copy-Item $zip, "$zip.sha256", $launcher, "$launcher.sha256" $downloads -Force
 Write-Host "copied to $downloads"

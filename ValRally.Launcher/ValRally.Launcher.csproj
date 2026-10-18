@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Windows launcher: finds Valheim, installs BepInEx, Jotunn and ValRally into a separate
+       profile and starts the game from it. Standalone; doesn't reference the mod or the core.
+       .NET Framework 4.8 ships with Windows 10 and 11, so the exe is one small file with
+       nothing else to install. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>ValRally.Launcher</RootNamespace>
+    <AssemblyName>ValRally-Launcher</AssemblyName>
+    <Version>0.2.0</Version>
+    <Product>ValRally Launcher</Product>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+</Project>

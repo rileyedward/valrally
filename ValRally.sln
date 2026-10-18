@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValRally.Core", "ValRally.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValRally.Sim", "ValRally.Sim\ValRally.Sim.csproj", "{DF7B1A52-E64C-46DA-9B9E-9C976D68119C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValRally.Launcher", "ValRally.Launcher\ValRally.Launcher.csproj", "{47AD9092-D952-421C-B46A-80A9D0822075}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{DF7B1A52-E64C-46DA-9B9E-9C976D68119C}.Release|x64.Build.0 = Release|Any CPU
 		{DF7B1A52-E64C-46DA-9B9E-9C976D68119C}.Release|x86.ActiveCfg = Release|Any CPU
 		{DF7B1A52-E64C-46DA-9B9E-9C976D68119C}.Release|x86.Build.0 = Release|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Debug|x64.Build.0 = Debug|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Debug|x86.Build.0 = Debug|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Release|x64.ActiveCfg = Release|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Release|x64.Build.0 = Release|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Release|x86.ActiveCfg = Release|Any CPU
+		{47AD9092-D952-421C-B46A-80A9D0822075}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
