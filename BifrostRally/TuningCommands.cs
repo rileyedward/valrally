@@ -23,6 +23,10 @@ namespace BifrostRally.Valheim
                 field.SetValue(car.Feel.Settings, entry.BoxedValue);
                 car.RefreshMassProperties();
             }
+            else if (section == CarConfig.StagesSection || section == CarConfig.StageTimingSection)
+            {
+                ApplyStages(config);
+            }
             else if (section == CarConfig.SurfaceRulesSection || section == CarConfig.EffectsSection || section.StartsWith(CarConfig.SurfacePrefix))
             {
                 ApplySurfaces(config);
@@ -37,6 +41,12 @@ namespace BifrostRally.Valheim
         {
             RallyDriver.ConfigureSurfaces(config.Get<SurfaceRules>(CarConfig.SurfaceRulesSection), config.GetSurfaceProfiles());
             SurfaceEffects.Settings = config.Get<EffectSettings>(CarConfig.EffectsSection);
+        }
+
+        public static void ApplyStages(CarConfig config)
+        {
+            StageRunner.Options = config.Get<StageOptions>(CarConfig.StagesSection);
+            StageRunner.Timer.Settings = config.Get<StageSettings>(CarConfig.StageTimingSection);
         }
 
         public static void Print(string text)

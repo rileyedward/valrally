@@ -24,6 +24,8 @@ namespace BifrostRally.Valheim
         public const string SurfaceRulesSection = "Surfaces";
         public const string EffectsSection = "Effects";
         public const string SurfacePrefix = "Surface ";
+        public const string StagesSection = "Stages";
+        public const string StageTimingSection = "Stage Timing";
 
         private readonly ConfigFile _config;
         private readonly Dictionary<string, Dictionary<FieldInfo, ConfigEntryBase>> _sections =
@@ -52,6 +54,8 @@ namespace BifrostRally.Valheim
             BindFields(FilterSection, new ColorFilterSettings());
             BindFields(SurfaceRulesSection, new SurfaceRules());
             BindFields(EffectsSection, new EffectSettings());
+            BindFields(StagesSection, new StageOptions());
+            BindFields(StageTimingSection, new StageSettings());
             foreach (Surface surface in SurfaceTable.All)
             {
                 BindFields(SurfacePrefix + surface, SurfaceTable.Default(surface));

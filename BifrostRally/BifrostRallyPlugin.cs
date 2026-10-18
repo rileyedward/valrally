@@ -21,6 +21,12 @@ namespace BifrostRally.Valheim
             _carConfig = new CarConfig(Config);
             RallyView.Configure(_carConfig.GetCamera(_carConfig.Preset.Value), _carConfig.Get<Core.ColorFilterSettings>(CarConfig.FilterSection));
             LiveTuning.ApplySurfaces(_carConfig);
+            LiveTuning.ApplyStages(_carConfig);
+            if (StageRunner.Options.Enabled)
+            {
+                RallyPieces.Register();
+            }
+            CommandManager.Instance.AddConsoleCommand(new StageCommand());
             CommandManager.Instance.AddConsoleCommand(new SpawnCarCommand(_carConfig));
             CommandManager.Instance.AddConsoleCommand(new SurfaceCommand());
             CommandManager.Instance.AddConsoleCommand(new RemoveCarCommand());
@@ -43,6 +49,7 @@ namespace BifrostRally.Valheim
             RallyView.BlendTime = _carConfig.BlendTime.Value;
             RallyDriver.Update(_carConfig.DriveKey.Value);
             SurfaceCommand.UpdateHud();
+            StageRunner.Update();
 
             if (RallyDriver.IsDriving && !RallyDriver.IsTyping() && ZInput.GetKeyDown(_carConfig.CameraKey.Value))
             {
