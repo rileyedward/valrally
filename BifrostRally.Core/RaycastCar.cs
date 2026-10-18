@@ -47,6 +47,7 @@ namespace BifrostRally.Core
         private Rigidbody _body;
         private Wheel[] _wheels;
         private float _steer;
+        private bool _resetSuspension;
 
         /// <summary>
         /// Wheel order is front-left, front-right, rear-left, rear-right.
@@ -110,6 +111,11 @@ namespace BifrostRally.Core
                 w.PrevCompression = w.Compression;
                 w.Grounded = Physics.Raycast(origin, -up, out w.Hit, maxDist, GroundMask, QueryTriggerInteraction.Ignore);
                 w.Compression = w.Grounded ? maxDist - w.Hit.distance : 0f;
+                if (_resetSuspension)
+                {
+                    // No damper kick on the first step after a teleport.
+                    w.PrevCompression = w.Compression;
+                }
                 float compressionVelocity = (w.Compression - w.PrevCompression) / dt;
                 w.SuspensionForce = s.SpringRate * w.Compression + s.DamperRate * compressionVelocity;
                 if (w.Grounded)
@@ -118,6 +124,7 @@ namespace BifrostRally.Core
                 }
             }
 
+            _resetSuspension = false;
             ApplyAntiRoll(_wheels[0], _wheels[1], s.AntiRollRate);
             ApplyAntiRoll(_wheels[2], _wheels[3], s.AntiRollRate);
 
@@ -183,6 +190,37 @@ namespace BifrostRally.Core
             _body.AddForce(-velocity * velocity.magnitude * s.AeroDrag);
             Feel.Step(_body, transform, Input, GroundedWheels, _wheels.Length, dt);
             UpdateVisuals(steerDeg);
+        }
+
+        /// <summary>
+        /// Teleport and set a forward speed, with wheels already rolling at that speed, so a
+        /// scripted test starts clean. Uses velocity changes rather than setting velocity
+        /// directly, which keeps it working across Unity versions.
+        /// </summary>
+        public void ResetMotion(Vector3 position, Quaternion rotation, float forwardSpeed)
+        {
+            _body.position = position;
+            _body.rotation = rotation;
+            transform.SetPositionAndRotation(position, rotation);
+            Vector3 target = rotation * Vector3.forward * forwardSpeed;
+            _body.AddForce(target - _body.GetPointVelocity(_body.worldCenterOfMass), ForceMode.VelocityChange);
+            _body.angularVelocity = Vector3.zero;
+            _steer = 0f;
+            Drivetrain = new Drivetrain();
+            foreach (Wheel w in _wheels)
+            {
+                w.State = new WheelState { Omega = forwardSpeed / Settings.WheelRadius };
+            }
+            _resetSuspension = true;
+        }
+
+        public bool AllWheelsGrounded => GroundedWheels == _wheels.Length;
+
+        /// <summary>Re-apply mass, centre of mass and inertia after their settings change.</summary>
+        public void RefreshMassProperties()
+        {
+            _body.mass = Settings.Mass;
+            Feel.ApplyMassProperties(_body, Settings.CenterOfMassHeight);
         }
 
         private float AxleShare(CarSettings s, bool front)
