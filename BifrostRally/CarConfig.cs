@@ -21,6 +21,9 @@ namespace BifrostRally.Valheim
         public const string CarSection = "Car";
         public const string FilterSection = "Filter";
         public const string FeelSection = "Feel";
+        public const string SurfaceRulesSection = "Surfaces";
+        public const string EffectsSection = "Effects";
+        public const string SurfacePrefix = "Surface ";
 
         private readonly ConfigFile _config;
         private readonly Dictionary<string, Dictionary<FieldInfo, ConfigEntryBase>> _sections =
@@ -47,6 +50,12 @@ namespace BifrostRally.Valheim
             BindFields(SectionFor(CameraPreset.Close), ChaseCameraSettings.Close());
             BindFields(SectionFor(CameraPreset.High), ChaseCameraSettings.High());
             BindFields(FilterSection, new ColorFilterSettings());
+            BindFields(SurfaceRulesSection, new SurfaceRules());
+            BindFields(EffectsSection, new EffectSettings());
+            foreach (Surface surface in SurfaceTable.All)
+            {
+                BindFields(SurfacePrefix + surface, SurfaceTable.Default(surface));
+            }
             MigrateDefaults();
         }
 
@@ -167,6 +176,17 @@ namespace BifrostRally.Valheim
                     }
                 }
             }
+        }
+
+        /// <summary>One profile per Surface value, indexed by the enum.</summary>
+        public SurfaceProfile[] GetSurfaceProfiles()
+        {
+            var all = new List<SurfaceProfile>();
+            foreach (Surface surface in SurfaceTable.All)
+            {
+                all.Add(Get<SurfaceProfile>(SurfacePrefix + surface));
+            }
+            return all.ToArray();
         }
 
         public ChaseCameraSettings GetCamera(CameraPreset preset) => Get<ChaseCameraSettings>(SectionFor(preset));

@@ -23,10 +23,20 @@ namespace BifrostRally.Valheim
                 field.SetValue(car.Feel.Settings, entry.BoxedValue);
                 car.RefreshMassProperties();
             }
+            else if (section == CarConfig.SurfaceRulesSection || section == CarConfig.EffectsSection || section.StartsWith(CarConfig.SurfacePrefix))
+            {
+                ApplySurfaces(config);
+            }
             else if (section == CarConfig.SectionFor(config.Preset.Value) || section == CarConfig.FilterSection)
             {
                 RallyView.Configure(config.GetCamera(config.Preset.Value), config.Get<ColorFilterSettings>(CarConfig.FilterSection));
             }
+        }
+
+        public static void ApplySurfaces(CarConfig config)
+        {
+            RallyDriver.ConfigureSurfaces(config.Get<SurfaceRules>(CarConfig.SurfaceRulesSection), config.GetSurfaceProfiles());
+            SurfaceEffects.Settings = config.Get<EffectSettings>(CarConfig.EffectsSection);
         }
 
         public static void Print(string text)

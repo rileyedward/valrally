@@ -29,7 +29,34 @@ namespace BifrostRally.Valheim
             Vector3 forward = Vector3.ProjectOnPlane(player.transform.forward, Vector3.up).normalized;
             Vector3 position = player.transform.position + forward * 4f + Vector3.up * 1f;
             Car = CarFactory.CreateBoxCar(position, Quaternion.LookRotation(forward), settings, feel, LayerMask.NameToLayer("vehicle"), GroundMask, FindCarMaterial());
+            ApplySurfaces();
             Jotunn.Logger.LogInfo($"Spawned rally car at {position}");
+        }
+
+        public static readonly ValheimSurfaceProvider Surfaces = new ValheimSurfaceProvider();
+        private static SurfaceProfile[] _profiles;
+
+        /// <summary>Hook the ground reader and surface profiles into the car (or leave it neutral).</summary>
+        public static void ConfigureSurfaces(SurfaceRules rules, SurfaceProfile[] profiles)
+        {
+            Surfaces.Rules = rules;
+            _profiles = profiles;
+            ApplySurfaces();
+        }
+
+        private static void ApplySurfaces()
+        {
+            if (Car == null)
+            {
+                return;
+            }
+            bool on = Surfaces.Rules.Enabled && _profiles != null;
+            Car.SurfaceProvider = on ? Surfaces : null;
+            if (on)
+            {
+                SurfaceProfile[] profiles = _profiles;
+                Car.SurfaceProfiles = surface => profiles[(int)surface];
+            }
         }
 
         /// <summary>
@@ -87,6 +114,8 @@ namespace BifrostRally.Valheim
                     StartDriving(player);
                 }
             }
+
+            SurfaceEffects.Update(Car, Time.deltaTime);
 
             if (ScriptedInput.HasValue)
             {
