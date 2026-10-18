@@ -52,6 +52,10 @@ if ($Target.Equals("Debug")) {
     Copy-Item -Path "$TargetPath\$name.dll" -Destination "$plug" -Force
     Copy-Item -Path "$TargetPath\$name.pdb" -Destination "$plug" -Force
     Copy-Item -Path "$TargetPath\$name.dll.mdb" -Destination "$plug" -Force
+    if (Test-Path "$TargetPath\BifrostRally.Core.dll") {
+        Copy-Item -Path "$TargetPath\BifrostRally.Core.dll" -Destination "$plug" -Force
+        Copy-Item -Path "$TargetPath\BifrostRally.Core.pdb" -Destination "$plug" -Force
+    }
 }
 
 if($Target.Equals("Release")) {
