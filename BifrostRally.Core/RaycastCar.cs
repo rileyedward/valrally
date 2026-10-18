@@ -33,6 +33,10 @@ namespace BifrostRally.Core
 
         public float SpeedKmh { get; private set; }
         public int GroundedWheels { get; private set; }
+        public Vector3 Velocity => _body != null ? _body.GetPointVelocity(_body.worldCenterOfMass) : Vector3.zero;
+
+        /// <summary>Spin around world up, in rad/s.</summary>
+        public float YawRate => _body != null ? Vector3.Dot(_body.angularVelocity, Vector3.up) : 0f;
 
         private Rigidbody _body;
         private Wheel[] _wheels;
