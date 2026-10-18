@@ -17,7 +17,7 @@ namespace BifrostRally.Valheim
         // keeps the wheel rays from hitting the driver. The car itself sits on "vehicle".
         private static int GroundMask => LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "terrain");
 
-        public static void Spawn(CarSettings settings)
+        public static void Spawn(CarSettings settings, FeelSettings feel)
         {
             Player player = Player.m_localPlayer;
             if (player == null)
@@ -28,7 +28,7 @@ namespace BifrostRally.Valheim
             Despawn();
             Vector3 forward = Vector3.ProjectOnPlane(player.transform.forward, Vector3.up).normalized;
             Vector3 position = player.transform.position + forward * 4f + Vector3.up * 1f;
-            Car = CarFactory.CreateBoxCar(position, Quaternion.LookRotation(forward), settings, LayerMask.NameToLayer("vehicle"), GroundMask, FindCarMaterial());
+            Car = CarFactory.CreateBoxCar(position, Quaternion.LookRotation(forward), settings, feel, LayerMask.NameToLayer("vehicle"), GroundMask, FindCarMaterial());
             Jotunn.Logger.LogInfo($"Spawned rally car at {position}");
         }
 
@@ -36,7 +36,7 @@ namespace BifrostRally.Valheim
         /// Unity's default primitive material renders pink in Valheim, so borrow the
         /// vanilla cart's material, which uses a shader the game actually ships.
         /// </summary>
-        private static Material FindCarMaterial()
+        internal static Material FindCarMaterial()
         {
             GameObject cart = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab("Cart") : null;
             MeshRenderer renderer = cart != null ? cart.GetComponentInChildren<MeshRenderer>() : null;
@@ -88,8 +88,18 @@ namespace BifrostRally.Valheim
                 }
             }
 
-            Car.Input = IsDriving && !typing ? ReadInput() : new CarInput { Brake = 0f, Handbrake = !IsDriving };
+            if (ScriptedInput.HasValue)
+            {
+                Car.Input = ScriptedInput.Value;
+            }
+            else
+            {
+                Car.Input = IsDriving && !typing ? ReadInput() : new CarInput { Brake = 0f, Handbrake = !IsDriving };
+            }
         }
+
+        /// <summary>When set, the test harness drives instead of the keyboard.</summary>
+        public static CarInput? ScriptedInput;
 
         /// <summary>True while the console, chat or menu has the keyboard.</summary>
         public static bool IsTyping()

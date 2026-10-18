@@ -19,7 +19,7 @@ namespace BifrostRally.Valheim
         public override void Run(string[] args)
         {
             _config.Reload();
-            RallyDriver.Spawn(_config.Get<CarSettings>(CarConfig.CarSection));
+            RallyDriver.Spawn(_config.Get<CarSettings>(CarConfig.CarSection), _config.Get<FeelSettings>(CarConfig.FeelSection));
             RallyView.Configure(_config.GetCamera(_config.Preset.Value), _config.Get<ColorFilterSettings>(CarConfig.FilterSection));
         }
     }
