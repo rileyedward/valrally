@@ -23,6 +23,8 @@ namespace BifrostRally.Core
             public RaycastHit Hit;
             public float SpinDeg;
             public WheelState State;
+            public Surface Surface;
+            public SurfaceProfile Profile;
         }
 
         public CarSettings Settings = new CarSettings();
@@ -35,6 +37,10 @@ namespace BifrostRally.Core
         public CarFeel Feel = new CarFeel();
         public Drivetrain Drivetrain = new Drivetrain();
         public TractionControl Traction = new TractionControl();
+
+        /// <summary>Optional. Without one, every surface is neutral (M3 behaviour).</summary>
+        public ISurfaceProvider SurfaceProvider;
+        public System.Func<Surface, SurfaceProfile> SurfaceProfiles = SurfaceTable.Default;
 
         public float SpeedKmh { get; private set; }
         public float MaxSlipAngleDeg { get; private set; }
@@ -49,6 +55,7 @@ namespace BifrostRally.Core
         private Wheel[] _wheels;
         private float _steer;
         private bool _resetSuspension;
+        private SurfaceProfile _neutral;
 
         /// <summary>
         /// Wheel order is front-left, front-right, rear-left, rear-right.
@@ -110,6 +117,7 @@ namespace BifrostRally.Core
                 Vector3 origin = transform.TransformPoint(w.Mount);
                 w.PrevCompression = w.Compression;
                 w.Grounded = Physics.Raycast(origin, -up, out w.Hit, maxDist, GroundMask, QueryTriggerInteraction.Ignore);
+                UpdateSurface(w);
                 w.Compression = w.Grounded ? maxDist - w.Hit.distance : 0f;
                 if (_resetSuspension)
                 {
@@ -237,6 +245,53 @@ namespace BifrostRally.Core
             return 0.5f * (front ? 1f - s.RearTorqueShare : s.RearTorqueShare);
         }
 
+        private void UpdateSurface(Wheel w)
+        {
+            if (SurfaceProvider != null && w.Grounded)
+            {
+                w.Surface = SurfaceProvider.Query(w.Hit);
+                w.Profile = SurfaceProfiles(w.Surface);
+            }
+            else if (SurfaceProvider == null || w.Profile == null)
+            {
+                // Neutral: plain grip and the car's own rolling resistance.
+                if (_neutral == null || _neutral.RollingDrag != Settings.RollingResistance)
+                {
+                    _neutral = new SurfaceProfile { RollingDrag = Settings.RollingResistance };
+                }
+                w.Profile = _neutral;
+            }
+        }
+
+        public struct WheelInfo
+        {
+            public bool Grounded;
+            public bool Front;
+            public Vector3 Contact;
+            public Surface Surface;
+            public float SlipRatio;
+            public float SlipAngleDeg;
+            public float Load;
+        }
+
+        public int WheelCount => _wheels != null ? _wheels.Length : 0;
+
+        /// <summary>Read-only wheel state for effects, HUD and debugging.</summary>
+        public WheelInfo GetWheel(int index)
+        {
+            Wheel w = _wheels[index];
+            return new WheelInfo
+            {
+                Grounded = w.Grounded,
+                Front = w.Front,
+                Contact = w.Grounded ? w.Hit.point : transform.TransformPoint(w.Mount),
+                Surface = w.Surface,
+                SlipRatio = w.State.SlipRatio,
+                SlipAngleDeg = Mathf.Atan(w.State.LateralSlip) * Mathf.Rad2Deg,
+                Load = w.Grounded ? Mathf.Max(0f, w.SuspensionForce) : 0f,
+            };
+        }
+
         /// <summary>Front wheel angle in degrees; the lock shrinks with speed.</summary>
         public static float SteerAngle(CarSettings s, float steer, float speedKmh)
         {
@@ -304,7 +359,7 @@ namespace BifrostRally.Core
             {
                 brakeForce += s.HandbrakeForce * 0.5f;
             }
-            brakeForce += s.RollingResistance * load;
+            brakeForce += w.Profile.RollingDrag * load;
 
             var input = new WheelDynamics.Inputs
             {
@@ -313,12 +368,14 @@ namespace BifrostRally.Core
                 Load = load,
                 DriveTorque = driveTorque * share,
                 BrakeTorque = brakeForce * s.WheelRadius,
-                LateralPeak = (w.Front ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * loadFactor * load
+                LateralPeak = (w.Front ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * w.Profile.Grip * loadFactor * load
                     * (handbraking ? s.HandbrakeGripFactor : 1f),
-                LongitudinalPeak = s.LongitudinalPeak * s.Grip * loadFactor * load,
+                LongitudinalPeak = s.LongitudinalPeak * s.Grip * w.Profile.Grip * loadFactor * load,
                 SpeedKmh = SpeedKmh,
                 Inertia = WheelDynamics.Inertia(s, share > 0f),
                 Grounded = w.Grounded,
+                PeakSlipScale = w.Profile.PeakSlipScale,
+                ShapeScale = w.Profile.ShapeScale,
             };
             return WheelDynamics.Step(ref w.State, input, s, dt);
         }
@@ -334,19 +391,19 @@ namespace BifrostRally.Core
             if (s.PacejkaTyres)
             {
                 float loadFactor = Tyre.LoadFactor(load, s.ReferenceLoad, s.LoadSensitivity);
-                float lateralPeak = (w.Front ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * loadFactor * load;
+                float lateralPeak = (w.Front ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * w.Profile.Grip * loadFactor * load;
                 w.State.LateralSlip = Tyre.RelaxLateral(w.State.LateralSlip, vLat, vLong, SpeedKmh, s, dt);
                 float slipDeg = Mathf.Atan(w.State.LateralSlip) * Mathf.Rad2Deg;
                 fy = -lateralPeak * handbrakeGrip * Tyre.MagicFormula(slipDeg, s.PacejkaPeakSlipDeg, s.PacejkaShape, s.PacejkaCurvature);
-                fxLimit = s.LongitudinalPeak * s.Grip * loadFactor * load;
+                fxLimit = s.LongitudinalPeak * s.Grip * w.Profile.Grip * loadFactor * load;
             }
             else
             {
                 // Slip angle with a speed floor so the tyre stays calm when nearly stopped.
                 float slipAngle = Mathf.Atan2(vLat, Mathf.Max(Mathf.Abs(vLong), s.LowSpeedSlipFloor));
                 float peak = s.PeakSlipAngleDeg * Mathf.Deg2Rad;
-                fy = -Mathf.Sign(slipAngle) * s.Grip * handbrakeGrip * load * GripCurve(Mathf.Abs(slipAngle) / peak, s.GripFalloff);
-                fxLimit = s.Grip * load;
+                fy = -Mathf.Sign(slipAngle) * s.Grip * w.Profile.Grip * handbrakeGrip * load * GripCurve(Mathf.Abs(slipAngle) / peak, s.GripFalloff);
+                fxLimit = s.Grip * w.Profile.Grip * load;
                 w.State.LateralSlip = Mathf.Tan(slipAngle);
             }
 
@@ -373,7 +430,7 @@ namespace BifrostRally.Core
             {
                 brake += s.HandbrakeForce * 0.5f;
             }
-            brake += s.RollingResistance * load;
+            brake += w.Profile.RollingDrag * load;
             fx += Resist(vLong, brake, massPerWheel, dt);
 
             if (s.PacejkaTyres)

@@ -35,6 +35,10 @@ namespace BifrostRally.Core
             public float SpeedKmh;
             public float Inertia;
             public bool Grounded;
+
+            /// <summary>Surface tweaks; 0 means 1 so a default struct still works.</summary>
+            public float PeakSlipScale;
+            public float ShapeScale;
         }
 
         /// <summary>Returns the average (forward, side) force over the step, in the wheel's frame.</summary>
@@ -49,6 +53,13 @@ namespace BifrostRally.Core
             float kx = Mathf.Min(1f, rollSpeed * h / lengthX);
             float ky = Mathf.Min(1f, rollSpeed * h / lengthY);
 
+            float peakScale = input.PeakSlipScale > 0f ? input.PeakSlipScale : 1f;
+            float shapeScale = input.ShapeScale > 0f ? input.ShapeScale : 1f;
+            float peakRatio = s.LongitudinalPeakSlip * peakScale;
+            float peakAngle = s.PacejkaPeakSlipDeg * peakScale;
+            float shapeLong = s.LongitudinalShape * shapeScale;
+            float shapeLat = s.PacejkaShape * shapeScale;
+
             Vector2 sum = Vector2.zero;
             for (int i = 0; i < substeps; i++)
             {
@@ -62,11 +73,11 @@ namespace BifrostRally.Core
 
                     // Combined slip: each slip measured against its own peak, and the length of
                     // that vector decides how far along the curve both forces are.
-                    float sx = state.SlipRatio / s.LongitudinalPeakSlip;
-                    float sy = Mathf.Atan(state.LateralSlip) * Mathf.Rad2Deg / s.PacejkaPeakSlipDeg;
+                    float sx = state.SlipRatio / peakRatio;
+                    float sy = Mathf.Atan(state.LateralSlip) * Mathf.Rad2Deg / peakAngle;
                     float combined = Mathf.Max(Mathf.Sqrt(sx * sx + sy * sy), 1e-4f);
-                    fx = input.LongitudinalPeak * (sx / combined) * Tyre.MagicFormula(combined, 1f, s.LongitudinalShape, 0f);
-                    fy = -input.LateralPeak * (sy / combined) * Tyre.MagicFormula(combined, 1f, s.PacejkaShape, s.PacejkaCurvature);
+                    fx = input.LongitudinalPeak * (sx / combined) * Tyre.MagicFormula(combined, 1f, shapeLong, 0f);
+                    fy = -input.LateralPeak * (sy / combined) * Tyre.MagicFormula(combined, 1f, shapeLat, s.PacejkaCurvature);
                 }
                 else
                 {
