@@ -45,7 +45,7 @@ namespace BifrostRally.Sim
             {
                 _surface = new SurfaceProfile { RollingDrag = _s.RollingResistance };
             }
-            bool ok = true;
+            bool ok = StageTests.Run();
             foreach (bool feel in new[] { false, true })
             {
                 _f.Enabled = feel;
