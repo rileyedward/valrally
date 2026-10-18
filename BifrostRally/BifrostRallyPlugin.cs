@@ -22,6 +22,7 @@ namespace BifrostRally.Valheim
             RallyView.Configure(_carConfig.GetCamera(_carConfig.Preset.Value), _carConfig.Get<Core.ColorFilterSettings>(CarConfig.FilterSection));
             CommandManager.Instance.AddConsoleCommand(new SpawnCarCommand(_carConfig));
             CommandManager.Instance.AddConsoleCommand(new RemoveCarCommand());
+            CommandManager.Instance.AddConsoleCommand(new TyresCommand(_carConfig));
             new Harmony(PluginGUID).PatchAll();
         }
 

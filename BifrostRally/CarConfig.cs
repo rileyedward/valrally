@@ -13,7 +13,7 @@ namespace BifrostRally.Valheim
     }
 
     /// <summary>
-    /// Exposes the float fields of the core settings classes as BepInEx config entries:
+    /// Exposes the float and bool fields of the core settings classes as BepInEx config entries:
     /// [Car], [Camera Close], [Camera High] and [Filter].
     /// </summary>
     internal class CarConfig
@@ -22,8 +22,8 @@ namespace BifrostRally.Valheim
         public const string FilterSection = "Filter";
 
         private readonly ConfigFile _config;
-        private readonly Dictionary<string, Dictionary<FieldInfo, ConfigEntry<float>>> _sections =
-            new Dictionary<string, Dictionary<FieldInfo, ConfigEntry<float>>>();
+        private readonly Dictionary<string, Dictionary<FieldInfo, ConfigEntryBase>> _sections =
+            new Dictionary<string, Dictionary<FieldInfo, ConfigEntryBase>>();
 
         public ConfigEntry<KeyCode> DriveKey { get; }
         public ConfigEntry<KeyCode> CameraKey { get; }
@@ -54,23 +54,39 @@ namespace BifrostRally.Valheim
         public T Get<T>(string section) where T : new()
         {
             var settings = new T();
-            foreach (KeyValuePair<FieldInfo, ConfigEntry<float>> entry in _sections[section])
+            foreach (KeyValuePair<FieldInfo, ConfigEntryBase> entry in _sections[section])
             {
-                entry.Key.SetValue(settings, entry.Value.Value);
+                entry.Key.SetValue(settings, entry.Value.BoxedValue);
             }
             return settings;
+        }
+
+        /// <summary>Changes one setting and saves it to the config file.</summary>
+        public void Set(string section, string name, object value)
+        {
+            foreach (KeyValuePair<FieldInfo, ConfigEntryBase> entry in _sections[section])
+            {
+                if (entry.Key.Name == name)
+                {
+                    entry.Value.BoxedValue = value;
+                }
+            }
         }
 
         public ChaseCameraSettings GetCamera(CameraPreset preset) => Get<ChaseCameraSettings>(SectionFor(preset));
 
         private void BindFields(string section, object defaults)
         {
-            var entries = new Dictionary<FieldInfo, ConfigEntry<float>>();
+            var entries = new Dictionary<FieldInfo, ConfigEntryBase>();
             foreach (FieldInfo field in defaults.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
                 if (field.FieldType == typeof(float))
                 {
                     entries[field] = _config.Bind(section, field.Name, (float)field.GetValue(defaults));
+                }
+                else if (field.FieldType == typeof(bool))
+                {
+                    entries[field] = _config.Bind(section, field.Name, (bool)field.GetValue(defaults));
                 }
             }
             _sections[section] = entries;

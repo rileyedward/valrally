@@ -24,6 +24,41 @@ namespace BifrostRally.Valheim
         }
     }
 
+    /// <summary>Switch tyre model on the current car without respawning, for back-to-back comparison.</summary>
+    internal class TyresCommand : ConsoleCommand
+    {
+        private readonly CarConfig _config;
+
+        public TyresCommand(CarConfig config)
+        {
+            _config = config;
+        }
+
+        public override string Name => "rally_tyres";
+
+        public override string Help => "rally_tyres pacejka|simple - switch tyre model on the current car (saved to config)";
+
+        public override void Run(string[] args)
+        {
+            bool? pacejka = args.Length == 0 ? null
+                : args[0] == "pacejka" ? true
+                : args[0] == "simple" ? (bool?)false
+                : null;
+            if (pacejka == null)
+            {
+                global::Console.instance.Print("Usage: rally_tyres pacejka|simple");
+                return;
+            }
+
+            _config.Set(CarConfig.CarSection, nameof(CarSettings.PacejkaTyres), pacejka.Value);
+            if (RallyDriver.Car != null)
+            {
+                RallyDriver.Car.Settings.PacejkaTyres = pacejka.Value;
+            }
+            global::Console.instance.Print("Tyres: " + (pacejka.Value ? "pacejka" : "simple"));
+        }
+    }
+
     internal class RemoveCarCommand : ConsoleCommand
     {
         public override string Name => "rally_remove";
