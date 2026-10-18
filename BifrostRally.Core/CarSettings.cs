@@ -23,8 +23,24 @@ namespace BifrostRally.Core
         public float DamperRate = 5500f;
         public float AntiRollRate = 15000f;
 
-        // Tyres
+        // Tyres. Grip multiplies everything and stands in for the surface until M4.
+        public bool PacejkaTyres = true;
         public float Grip = 1.0f;
+
+        // Pacejka tyres: peak force per unit load, curve shape, and slip relaxation
+        public float LateralPeakFront = 1.6f;
+        public float LateralPeakRear = 1.8f;
+        public float LongitudinalPeak = 1.9f;
+        public float PacejkaPeakSlipDeg = 9.5f;
+        public float PacejkaShape = 1.5f;
+        public float PacejkaCurvature = 0f;
+        public float LoadSensitivity = 0f;
+        public float ReferenceLoad = 3000f;
+        public float RelaxationLength = 0.5f;
+        public float RelaxationPerKmh = 0.02f;
+        public float RelaxationSpeedFloor = 8f;
+
+        // Simple tyres (the M1 model)
         public float PeakSlipAngleDeg = 8f;
         public float GripFalloff = 0.15f;
         public float LowSpeedSlipFloor = 4f;

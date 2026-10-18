@@ -22,6 +22,7 @@ namespace BifrostRally.Core
             public bool Grounded;
             public RaycastHit Hit;
             public float SpinDeg;
+            public float LateralSlip;
         }
 
         public CarSettings Settings = new CarSettings();
@@ -136,12 +137,28 @@ namespace BifrostRally.Core
                 float vLong = Vector3.Dot(v, fwd);
                 float vLat = Vector3.Dot(v, right);
 
-                // Slip angle with a speed floor so the tyre stays calm when nearly stopped.
-                float slipAngle = Mathf.Atan2(vLat, Mathf.Max(Mathf.Abs(vLong), s.LowSpeedSlipFloor));
-                float peak = s.PeakSlipAngleDeg * Mathf.Deg2Rad;
                 bool handbraking = Input.Handbrake && !w.Front;
-                float lateralGrip = s.Grip * (handbraking ? s.HandbrakeGripFactor : 1f);
-                float fy = -Mathf.Sign(slipAngle) * lateralGrip * load * GripCurve(Mathf.Abs(slipAngle) / peak, s.GripFalloff);
+                float handbrakeGrip = handbraking ? s.HandbrakeGripFactor : 1f;
+                float fy;
+                float fxLimit;
+                if (s.PacejkaTyres)
+                {
+                    float loadFactor = Tyre.LoadFactor(load, s.ReferenceLoad, s.LoadSensitivity);
+                    float lateralPeak = (w.Front ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * loadFactor * load;
+                    w.LateralSlip = Tyre.RelaxLateral(w.LateralSlip, vLat, vLong, SpeedKmh, s, dt);
+                    float slipDeg = Mathf.Atan(w.LateralSlip) * Mathf.Rad2Deg;
+                    fy = -lateralPeak * handbrakeGrip * Tyre.MagicFormula(slipDeg, s.PacejkaPeakSlipDeg, s.PacejkaShape, s.PacejkaCurvature);
+                    fxLimit = s.LongitudinalPeak * s.Grip * loadFactor * load;
+                }
+                else
+                {
+                    // Slip angle with a speed floor so the tyre stays calm when nearly stopped.
+                    float slipAngle = Mathf.Atan2(vLat, Mathf.Max(Mathf.Abs(vLong), s.LowSpeedSlipFloor));
+                    float peak = s.PeakSlipAngleDeg * Mathf.Deg2Rad;
+                    fy = -Mathf.Sign(slipAngle) * s.Grip * handbrakeGrip * load * GripCurve(Mathf.Abs(slipAngle) / peak, s.GripFalloff);
+                    fxLimit = s.Grip * load;
+                    w.LateralSlip = 0f;
+                }
 
                 float fx = 0f;
                 bool reversing = Input.Brake > 0f && Input.Throttle <= 0f && forwardSpeed < 1f;
@@ -170,14 +187,23 @@ namespace BifrostRally.Core
                 brake += s.RollingResistance * load;
                 fx += Resist(vLong, brake, massPerWheel, dt);
 
-                // Friction circle: drive/brake force uses up side grip.
-                float limit = s.Grip * load;
-                float total = Mathf.Sqrt(fx * fx + fy * fy);
-                if (total > limit && total > 0f)
+                if (s.PacejkaTyres)
                 {
-                    float scale = limit / total;
-                    fx *= scale;
-                    fy *= scale;
+                    // Friction ellipse: the share of forward grip in use is taken off the side grip.
+                    fx = Mathf.Clamp(fx, -fxLimit, fxLimit);
+                    float used = fxLimit > 0f ? fx / fxLimit : 0f;
+                    fy *= Mathf.Sqrt(Mathf.Max(0f, 1f - used * used));
+                }
+                else
+                {
+                    // Friction circle: drive/brake force uses up side grip.
+                    float total = Mathf.Sqrt(fx * fx + fy * fy);
+                    if (total > fxLimit && total > 0f)
+                    {
+                        float scale = fxLimit / total;
+                        fx *= scale;
+                        fy *= scale;
+                    }
                 }
 
                 _body.AddForceAtPosition(normal * load + fwd * fx + right * fy, centre);
