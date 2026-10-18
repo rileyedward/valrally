@@ -31,6 +31,11 @@ namespace BifrostRally.Valheim
             new Harmony(PluginGUID).PatchAll();
         }
 
+        private void OnGUI()
+        {
+            RallyHud.Draw(_carConfig.ShowHud.Value);
+        }
+
         private void Update()
         {
             RallyView.BlendTime = _carConfig.BlendTime.Value;
