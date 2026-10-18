@@ -20,7 +20,9 @@ namespace BifrostRally.Valheim
             Jotunn.Logger.LogInfo($"{PluginName} {PluginVersion} loaded. Unity {Application.unityVersion}");
             _carConfig = new CarConfig(Config);
             RallyView.Configure(_carConfig.GetCamera(_carConfig.Preset.Value), _carConfig.Get<Core.ColorFilterSettings>(CarConfig.FilterSection));
+            LiveTuning.ApplySurfaces(_carConfig);
             CommandManager.Instance.AddConsoleCommand(new SpawnCarCommand(_carConfig));
+            CommandManager.Instance.AddConsoleCommand(new SurfaceCommand());
             CommandManager.Instance.AddConsoleCommand(new RemoveCarCommand());
             CommandManager.Instance.AddConsoleCommand(new TyresCommand(_carConfig));
             CommandManager.Instance.AddConsoleCommand(new SetCommand(_carConfig));
@@ -40,6 +42,7 @@ namespace BifrostRally.Valheim
         {
             RallyView.BlendTime = _carConfig.BlendTime.Value;
             RallyDriver.Update(_carConfig.DriveKey.Value);
+            SurfaceCommand.UpdateHud();
 
             if (RallyDriver.IsDriving && !RallyDriver.IsTyping() && ZInput.GetKeyDown(_carConfig.CameraKey.Value))
             {
