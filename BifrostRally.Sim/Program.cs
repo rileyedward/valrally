@@ -22,12 +22,18 @@ namespace BifrostRally.Sim
 
         private static CarSettings _s = new CarSettings();
         private static FeelSettings _f = new FeelSettings();
+        private static SurfaceProfile _surface;
 
         private static int Main(string[] args)
         {
             foreach (string arg in args)
             {
                 string[] kv = arg.Split('=');
+                if (kv[0] == "Surface")
+                {
+                    _surface = SurfaceTable.Default((Surface)Enum.Parse(typeof(Surface), kv[1]));
+                    continue;
+                }
                 object target = kv[0].StartsWith("Feel.") ? (object)_f : _s;
                 string name = kv[0].StartsWith("Feel.") ? kv[0].Substring(5) : kv[0];
                 var field = target.GetType().GetField(name);
@@ -35,6 +41,10 @@ namespace BifrostRally.Sim
                 field.SetValue(target, value);
             }
 
+            if (_surface == null)
+            {
+                _surface = new SurfaceProfile { RollingDrag = _s.RollingResistance };
+            }
             bool ok = true;
             foreach (bool feel in new[] { false, true })
             {
@@ -139,7 +149,7 @@ namespace BifrostRally.Sim
                     bool handbraking = input.Handbrake && !Front(i);
                     float brakeShare = Front(i) ? s.BrakeBiasFront : 1f - s.BrakeBiasFront;
                     float brake = (reversing ? 0f : input.Brake * s.BrakeForce * brakeShare * 0.5f)
-                        + (handbraking ? s.HandbrakeForce * 0.5f : 0f) + s.RollingResistance * load;
+                        + (handbraking ? s.HandbrakeForce * 0.5f : 0f) + _surface.RollingDrag * load;
                     float loadFactor = Tyre.LoadFactor(load, s.ReferenceLoad, s.LoadSensitivity);
 
                     var wheelInput = new WheelDynamics.Inputs
@@ -149,11 +159,13 @@ namespace BifrostRally.Sim
                         Load = load,
                         DriveTorque = drive * Share(i),
                         BrakeTorque = brake * s.WheelRadius,
-                        LateralPeak = (Front(i) ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * loadFactor * load * (handbraking ? s.HandbrakeGripFactor : 1f),
-                        LongitudinalPeak = s.LongitudinalPeak * s.Grip * loadFactor * load,
+                        LateralPeak = (Front(i) ? s.LateralPeakFront : s.LateralPeakRear) * s.Grip * _surface.Grip * loadFactor * load * (handbraking ? s.HandbrakeGripFactor : 1f),
+                        LongitudinalPeak = s.LongitudinalPeak * s.Grip * _surface.Grip * loadFactor * load,
                         SpeedKmh = SpeedKmh,
                         Inertia = WheelDynamics.Inertia(s, Share(i) > 0f),
                         Grounded = true,
+                        PeakSlipScale = _surface.PeakSlipScale,
+                        ShapeScale = _surface.ShapeScale,
                     };
                     Vector2 f = WheelDynamics.Step(ref Wheels[i], wheelInput, s, Dt);
                     MaxTyreSlipDeg = Mathf.Max(MaxTyreSlipDeg, Mathf.Abs(Mathf.Atan(Wheels[i].LateralSlip) * Mathf.Rad2Deg));
@@ -175,7 +187,7 @@ namespace BifrostRally.Sim
                 float speed = new Vector2(U, V).magnitude;
                 fu -= s.AeroDrag * U * speed;
                 fv -= s.AeroDrag * V * speed;
-                moment += CarFeel.SteerYaw(_f, input.Steer, U, true) + CarFeel.SlideYaw(_f, U, V, !input.Handbrake);
+                moment += CarFeel.SteerYaw(_f, input.Steer, U, V, true) + CarFeel.SlideYaw(_f, U, V, !input.Handbrake);
 
                 float inertia = s.Mass / 12f * (BodyWidth * BodyWidth + BodyLength * BodyLength) * (_f.Enabled ? _f.InertiaScale : 1f);
                 Ax = fu / s.Mass;

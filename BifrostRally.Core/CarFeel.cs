@@ -16,8 +16,11 @@ namespace BifrostRally.Core
         // Extra yaw from the steering input, so the car turns in eagerly.
         public float SteerYawTorque = 5000f;
         public float SteerYawMaxTorque = 8000f;
-        public float SteerYawFullSpeed = 45f;
+        // Full strength from this speed. AoR's matching constant is most likely km/h, like its 35 km/h threshold.
+        public float SteerYawFullSpeedKmh = 45f;
         public float AssistMinSpeedKmh = 35f;
+        // Steering yaw fades out as the car's slide angle approaches this, so it starts slides but never spins you.
+        public float SteerYawSlipFadeDeg = 25f;
 
         // Turns the nose towards the direction of travel when sliding, so drifts are catchable.
         public float SlideStabilityTorque = 3000f;
@@ -78,7 +81,7 @@ namespace BifrostRally.Core
             bool allGrounded = groundedWheels == wheelCount;
 
             // Slide help stays off while the handbrake is held, so a handbrake flick can rotate fully.
-            float yaw = SteerYaw(f, input.Steer, forwardSpeed, allGrounded) + SlideYaw(f, forwardSpeed, lateralSpeed, groundedWheels > 0 && !input.Handbrake);
+            float yaw = SteerYaw(f, input.Steer, forwardSpeed, lateralSpeed, allGrounded) + SlideYaw(f, forwardSpeed, lateralSpeed, groundedWheels > 0 && !input.Handbrake);
             if (yaw != 0f)
             {
                 body.AddTorque(t.up * yaw);
@@ -94,14 +97,16 @@ namespace BifrostRally.Core
         }
 
         /// <summary>Yaw torque from the raw steering input, so the car reacts before the wheels do.</summary>
-        public static float SteerYaw(FeelSettings f, float steer, float forwardSpeed, bool allGrounded)
+        public static float SteerYaw(FeelSettings f, float steer, float forwardSpeed, float lateralSpeed, bool allGrounded)
         {
             if (!f.Enabled || !allGrounded || Mathf.Abs(forwardSpeed) * 3.6f <= f.AssistMinSpeedKmh)
             {
                 return 0f;
             }
-            float speedScale = Mathf.Clamp01(Mathf.Abs(forwardSpeed) / f.SteerYawFullSpeed);
-            float yaw = Mathf.Clamp(steer * f.SteerYawTorque * speedScale, -f.SteerYawMaxTorque, f.SteerYawMaxTorque);
+            float speedScale = Mathf.Clamp01(Mathf.Abs(forwardSpeed) * 3.6f / f.SteerYawFullSpeedKmh);
+            float slipDeg = Mathf.Abs(Mathf.Atan2(lateralSpeed, Mathf.Abs(forwardSpeed)) * Mathf.Rad2Deg);
+            float fade = f.SteerYawSlipFadeDeg > 0f ? 1f - Mathf.Clamp01(slipDeg / f.SteerYawSlipFadeDeg) : 1f;
+            float yaw = Mathf.Clamp(steer * f.SteerYawTorque * speedScale * fade, -f.SteerYawMaxTorque, f.SteerYawMaxTorque);
             return yaw * Mathf.Sign(forwardSpeed);
         }
 
