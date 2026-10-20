@@ -2,7 +2,7 @@
 
 Rally driving in Valheim, inspired by Art of Rally.
 
-> **Status:** Early development — getting in and out, the chase camera and the colour filter have been played in game; handling, surfaces, rally pieces, ghosts and pace notes build and pass the offline sim but haven't been driven in game yet. See [docs/status.md](docs/status.md).
+> **Status:** Experimental — a working prototype built to see what was possible. It isn't being developed further, but you're welcome to download it, try it and make it your own.
 
 ## Overview
 
@@ -14,7 +14,7 @@ The car physics, camera, surfaces and stage timing live in a rally core that doe
 
 ValRally is not produced, approved or endorsed by Funselektor Labs or Iron Gate. It ships no code or assets from Art of Rally or Valheim.
 
-This is an early test build: milestones M0 to M2 have been played in game, and M3 to M6 so far only in the offline sim.
+This is an early test build: milestones M0 to M2 have been played in game, and M3 to M6 so far only in the offline sim. See [docs/status.md](docs/status.md).
 
 ### Key Features
 
@@ -186,7 +186,7 @@ In game, `rally_test compare` runs a scripted handling test on a flat platform a
 
 ## Contributing
 
-Bug reports, ideas and pull requests are welcome through [Issues](../../issues). This is a personal project I work on in my spare time, so replies can be slow and not every suggestion will make it in. For anything bigger than a small fix, open an issue first so we can talk it through. Bug reports are most useful with your ValRally and Valheim versions and the relevant part of `BepInEx\LogOutput.log`.
+This was an experiment to see what was possible, and I'm not developing it further, so I'm not reviewing issues or pull requests. You're very welcome to fork it, build on it and make it your own under the license below.
 
 ## Data and Licensing
 
